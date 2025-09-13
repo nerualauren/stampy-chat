@@ -1,16 +1,60 @@
-from typing import TypedDict, Literal, Generator, Sequence
+from typing import TypedDict, Literal, Generator, Sequence, Any, Callable, Optional
 
 import anthropic
 import openai
 from google import genai
 from stampy_chat.settings import ANTHROPIC, OPENAI, GOOGLE, OPENROUTER, MODELS, Settings
 from stampy_chat.env import OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, OPENROUTER_API_KEY
-from stampy_chat.citations import Message
+from stampy_chat.citations import Message, retrieve_docs
 
 
 class LLMChunk(TypedDict):
     type: Literal["thinking", "response"]
     text: str
+
+
+class Tool(TypedDict):
+    name: str
+    description: str
+    input_schema: dict[str, Any]
+
+
+# Built-in tool: retrieve_docs
+RETRIEVE_DOCS_TOOL = Tool(
+    name="retrieve_docs",
+    description="Retrieve relevant documents from the knowledge base. Use this when you need to find information about AI safety, alignment, or related topics to answer user questions accurately.",
+    input_schema={
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "The search query to find relevant documents. Should be a clear, specific question or topic."
+            }
+        },
+        "required": ["query"]
+    }
+)
+
+
+def execute_tool(tool_name: str, tool_input: dict[str, Any], settings: Settings) -> str:
+    """Execute a tool function and return the result as a string."""
+    if tool_name == "retrieve_docs":
+        query = tool_input.get("query", "")
+        blocks = retrieve_docs(query, settings)
+        # Format the results as a readable string
+        if not blocks:
+            return "No relevant documents found."
+
+        result = "Retrieved documents:\n\n"
+        for block in blocks:
+            result += f"Title: {block['title']}\n"
+            result += f"Authors: {', '.join(block['authors']) if block['authors'] else 'Unknown'}\n"
+            result += f"Date: {block['date_published']}\n"
+            result += f"Text: {block['text']}\n"
+            result += f"URL: {block['url']}\n\n"
+        return result
+    else:
+        return f"Error: Unknown tool '{tool_name}'"
 
 
 def split_system(history: Sequence[Message]) -> tuple[str, list[Message]]:
@@ -25,32 +69,135 @@ def call_anthropic(
     max_tokens: int,
     thinking_budget: int = 0,
     stream: bool = True,
+    tools: Optional[list[Tool]] = None,
+    settings: Optional[Settings] = None,
 ) -> Generator[LLMChunk, None, None]:
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-    params = {}
-    if thinking_budget > 0:
-        params["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+    # Handle tool use loop
+    current_history = list(history)
 
-    system, history = split_system(history)
+    while True:
+        params = {}
+        if thinking_budget > 0:
+            params["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
 
-    try:
-        response = client.messages.create(
-            model=model,
-            messages=history,
-            system=system,
-            max_tokens=max_tokens,
-            stream=stream,
-            **params,
-        )
-    except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
-        print("WARNING: falling back to google due to anthropic api error:", e)
-        return call_google(history, model, max_tokens, thinking_budget, stream)
+        # Add tools if provided
+        if tools:
+            params["tools"] = [{"name": tool["name"], "description": tool["description"], "input_schema": tool["input_schema"]} for tool in tools]
 
-    if stream:
-        return anthropic_stream(response)
-    else:
-        return response.content[0].text
+        system, msg_history = split_system(current_history)
+
+        try:
+            response = client.messages.create(
+                model=model,
+                messages=msg_history,
+                system=system,
+                max_tokens=max_tokens,
+                stream=stream,
+                **params,
+            )
+        except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
+            print("WARNING: falling back to google due to anthropic api error:", e)
+            return call_google(current_history, model, max_tokens, thinking_budget, stream, tools, settings)
+
+        if stream:
+            # For streaming with tools, we yield the chunks but also need to
+            # check for tool use after streaming completes
+            for chunk in anthropic_stream(response):
+                yield chunk
+
+            # After streaming completes, check if the response requires tool use
+            # The 'response' object contains the final state after streaming
+            if hasattr(response, 'stop_reason') and response.stop_reason == 'tool_use':
+                # Process tool uses like in non-streaming mode
+                tool_uses = []
+                response_content = []
+
+                for content_block in response.content:
+                    if content_block.type == 'text':
+                        response_content.append({"type": "text", "text": content_block.text})
+                    elif content_block.type == 'tool_use':
+                        tool_uses.append(content_block)
+                        response_content.append({
+                            "type": "tool_use",
+                            "id": content_block.id,
+                            "name": content_block.name,
+                            "input": content_block.input
+                        })
+
+                # Add assistant message with tool uses to history
+                current_history.append({"role": "assistant", "content": response_content})
+
+                # Execute tools and add results
+                tool_results = []
+                for tool_use in tool_uses:
+                    if settings is None:
+                        settings = Settings()
+                    result = execute_tool(tool_use.name, tool_use.input, settings, conversation_context, callbacks)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": tool_use.id,
+                        "content": result
+                    })
+
+                # Add tool results to history
+                current_history.append({"role": "user", "content": tool_results})
+
+                # Continue the loop to get the final response
+                continue
+            else:
+                # No tool use, streaming is complete
+                return
+
+        # Handle tool use (non-streaming mode for now)
+        if not stream and hasattr(response, 'stop_reason') and response.stop_reason == 'tool_use':
+            # Extract tool uses from response
+            tool_uses = []
+            response_content = []
+
+            for content_block in response.content:
+                if content_block.type == 'text':
+                    response_content.append({"type": "text", "text": content_block.text})
+                    if not stream:  # Only yield text in non-streaming mode here
+                        yield LLMChunk(type="response", text=content_block.text)
+                elif content_block.type == 'tool_use':
+                    tool_uses.append(content_block)
+                    response_content.append({
+                        "type": "tool_use",
+                        "id": content_block.id,
+                        "name": content_block.name,
+                        "input": content_block.input
+                    })
+
+            # Add assistant message with tool uses to history
+            current_history.append({"role": "assistant", "content": response_content})
+
+            # Execute tools and add results
+            tool_results = []
+            for tool_use in tool_uses:
+                if settings is None:
+                    settings = Settings()
+                result = execute_tool(tool_use.name, tool_use.input, settings)
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_use.id,
+                    "content": result
+                })
+
+            # Add tool results to history
+            current_history.append({"role": "user", "content": tool_results})
+
+            # Continue the loop to get the final response
+            continue
+        else:
+            # No tool use, return the response
+            if not stream:
+                # For non-streaming, yield the response content
+                for content_block in response.content:
+                    if content_block.type == 'text':
+                        yield LLMChunk(type="response", text=content_block.text)
+            return
 
 
 def anthropic_stream(response):
@@ -68,7 +215,12 @@ def call_openai(
     max_tokens: int,
     thinking_budget: int = 0,
     stream: bool = False,
+    tools: Optional[list[Tool]] = None,
+    settings: Optional[Settings] = None,
 ) -> Generator[LLMChunk, None, None]:
+    if tools:
+        raise NotImplementedError("Tool use is not yet implemented for OpenAI provider")
+
     client = openai.OpenAI(api_key=OPENAI_API_KEY)
     system, history = split_system(history)
     params = {}
@@ -101,7 +253,12 @@ def call_google(
     max_tokens: int,
     thinking_budget: int = 0,
     stream: bool = False,
+    tools: Optional[list[Tool]] = None,
+    settings: Optional[Settings] = None,
 ) -> Generator[LLMChunk, None, None]:
+    if tools:
+        raise NotImplementedError("Tool use is not yet implemented for Google provider")
+
     client = genai.Client(api_key=GOOGLE_API_KEY)
     system, history = split_system(history)
 
@@ -150,11 +307,16 @@ def call_openrouter(
     max_tokens: int,
     thinking_budget: int = 0,
     stream: bool = True,
+    tools: Optional[list[Tool]] = None,
+    settings: Optional[Settings] = None,
 ) -> Generator[LLMChunk, None, None]:
+    if tools:
+        raise NotImplementedError("Tool use is not yet implemented for OpenRouter provider")
+
     # Remove "openrouter/" prefix to get the actual model name
     if model.startswith("openrouter/"):
         model = model[len("openrouter/"):]
-    
+
     client = openai.OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=OPENROUTER_API_KEY,
@@ -221,6 +383,7 @@ def query_llm(
     stream: bool = True,
     max_tokens: int | None = None,
     thinking_budget: int | None = None,
+    tools: Optional[list[Tool]] = None,
 ) -> Generator[LLMChunk, None, None]:
     provider = settings.model_provider
     if provider == ANTHROPIC:
@@ -247,4 +410,6 @@ def query_llm(
         max_tokens if max_tokens is not None else settings.max_response_tokens,
         thinking_budget,
         stream=stream,
+        tools=tools,
+        settings=settings,
     )
