@@ -96,6 +96,20 @@ class StreamState:
         self.current_tool_json = ""
 
 
+class ResponseAccumulator:
+    """Accumulates response across multiple model calls for tool use with thinking"""
+    def __init__(self, custom_thinking: bool):
+        self.parts = []
+        self.thinking_state = ThinkingState() if custom_thinking else None
+        self.thinking_finished = False
+
+    def get_accumulated_content(self) -> str:
+        """Get the current accumulated response content for continuation"""
+        if self.thinking_state and not self.thinking_finished:
+            return self.thinking_state.accumulated_text
+        return "".join(self.parts)
+
+
 def handle_thinking_delta(thinking_state: ThinkingState, delta_text: str) -> Generator[LLMChunk, None, None]:
     """Process custom thinking block text and yield thinking/response chunks"""
     thinking_state.accumulated_text += delta_text
@@ -143,61 +157,106 @@ def handle_thinking_delta(thinking_state: ThinkingState, delta_text: str) -> Gen
         yield LLMChunk(type="response", text=delta_text)
 
 
+def _update_response_accumulator(accumulator: ResponseAccumulator, message_content: list) -> None:
+    """Update response accumulator with new message content"""
+    if accumulator.thinking_state and not accumulator.thinking_state.in_thinking_block:
+        accumulator.thinking_finished = True
+        # Extract response content from message_content
+        for content in message_content:
+            if content["type"] == "text":
+                accumulator.parts.append(content["text"])
+
+
+def _extract_tool_uses_nonstreaming(response) -> tuple[list, list]:
+    """Extract tool uses from non-streaming response"""
+    tool_uses = []
+    response_content = []
+
+    for content_block in response.content:
+        if content_block.type == 'text':
+            response_content.append({"type": "text", "text": content_block.text})
+        elif content_block.type == 'tool_use':
+            tool_uses.append(content_block)
+            response_content.append({
+                "type": "tool_use",
+                "id": content_block.id,
+                "name": content_block.name,
+                "input": content_block.input
+            })
+
+    return tool_uses, response_content
+
+
+def _execute_tool_uses_nonstreaming(tool_uses: list, settings: Optional[Settings], conversation_context, callbacks) -> list:
+    """Execute tool uses for non-streaming mode"""
+    tool_results = []
+    for tool_use in tool_uses:
+        if settings is None:
+            settings = Settings()
+        result = execute_tool(tool_use.name, tool_use.input, settings, conversation_context, callbacks)
+        tool_results.append({
+            "type": "tool_result",
+            "tool_use_id": tool_use.id,
+            "content": result
+        })
+    return tool_results
+
+
 def process_stream_events(
     stream_response,
-    custom_thinking: bool,
+    response_accumulator: Optional[ResponseAccumulator],
 ) -> Generator[LLMChunk, None, tuple[list, str, list]]:
     """Process streaming events and yield chunks, returning final state"""
     stream_state = StreamState()
-    thinking_state = ThinkingState() if custom_thinking else None
 
-    for event in stream_response:
-        if event.type == "content_block_start":
-            if event.content_block.type == "text":
-                stream_state.current_text = ""
-            elif event.content_block.type == "tool_use":
-                stream_state.current_tool_use = {
-                    "type": "tool_use",
-                    "id": event.content_block.id,
-                    "name": event.content_block.name,
-                    "input": {}
-                }
-                stream_state.current_tool_json = ""
+    with stream_response as stream:
+        for event in stream:
+            if event.type == "content_block_start":
+                if event.content_block.type == "text":
+                    stream_state.current_text = ""
+                elif event.content_block.type == "tool_use":
+                    stream_state.current_tool_use = {
+                        "type": "tool_use",
+                        "id": event.content_block.id,
+                        "name": event.content_block.name,
+                        "input": {}
+                    }
+                    stream_state.current_tool_json = ""
 
-        elif event.type == "content_block_delta":
-            if event.delta.type == "text_delta":
-                stream_state.current_text += event.delta.text
+            elif event.type == "content_block_delta":
+                if event.delta.type == "text_delta":
+                    stream_state.current_text += event.delta.text
 
-                if custom_thinking and thinking_state:
-                    yield from handle_thinking_delta(thinking_state, event.delta.text)
-                else:
-                    yield LLMChunk(type="response", text=event.delta.text)
+                    if response_accumulator and response_accumulator.thinking_state:
+                        yield from handle_thinking_delta(response_accumulator.thinking_state, event.delta.text)
+                    else:
+                        yield LLMChunk(type="response", text=event.delta.text)
 
-            elif event.delta.type == "thinking_delta":
-                yield LLMChunk(type="thinking", text=event.delta.thinking)
-            elif event.delta.type == "input_json_delta":
-                stream_state.current_tool_json += event.delta.partial_json
+                elif event.delta.type == "thinking_delta":
+                    yield LLMChunk(type="thinking", text=event.delta.thinking)
+                elif event.delta.type == "input_json_delta":
+                    stream_state.current_tool_json += event.delta.partial_json
 
-        elif event.type == "content_block_stop":
-            if stream_state.current_text:
-                stream_state.message_content.append({"type": "text", "text": stream_state.current_text})
-                stream_state.current_text = ""
-            elif stream_state.current_tool_use:
-                # Parse the complete JSON input
-                import json
-                try:
-                    stream_state.current_tool_use["input"] = json.loads(stream_state.current_tool_json)
-                except json.JSONDecodeError:
-                    stream_state.current_tool_use["input"] = {}
+            elif event.type == "content_block_stop":
+                if stream_state.current_text:
+                    stream_state.message_content.append({"type": "text", "text": stream_state.current_text})
+                    stream_state.current_text = ""
+                elif stream_state.current_tool_use:
+                    # Parse the complete JSON input
+                    import json
+                    try:
+                        stream_state.current_tool_use["input"] = json.loads(stream_state.current_tool_json)
+                    except json.JSONDecodeError:
+                        stream_state.current_tool_use["input"] = {}
 
-                stream_state.message_content.append(stream_state.current_tool_use)
-                stream_state.tool_uses.append(stream_state.current_tool_use)
-                stream_state.current_tool_use = None
-                stream_state.current_tool_json = ""
+                    stream_state.message_content.append(stream_state.current_tool_use)
+                    stream_state.tool_uses.append(stream_state.current_tool_use)
+                    stream_state.current_tool_use = None
+                    stream_state.current_tool_json = ""
 
-        elif event.type == "message_delta":
-            if hasattr(event.delta, 'stop_reason'):
-                stream_state.stop_reason = event.delta.stop_reason
+            elif event.type == "message_delta":
+                if hasattr(event.delta, 'stop_reason'):
+                    stream_state.stop_reason = event.delta.stop_reason
 
     return stream_state.message_content, stream_state.stop_reason, stream_state.tool_uses
 
@@ -230,7 +289,8 @@ def create_anthropic_request(
     thinking_budget: int,
     custom_thinking: bool,
     tools: Optional[list[Tool]],
-    stream: bool
+    stream: bool,
+    response_accumulator: Optional[ResponseAccumulator] = None
 ):
     """Create and execute Anthropic API request"""
     params = {}
@@ -241,11 +301,18 @@ def create_anthropic_request(
         params["tools"] = [{"name": tool["name"], "description": tool["description"], "input_schema": tool["input_schema"]} for tool in tools]
 
     system, msg_history = split_system(current_history)
+    msg_history = list(msg_history)
 
     # Add preloaded assistant message for custom thinking
+    # Only add this if there are no assistant messages already (i.e., first call)
     if custom_thinking:
-        msg_history = list(msg_history)
-        msg_history.append({"role": "assistant", "content": "<thinking>"})
+        # Check if the last message in history is from assistant (indicating previous tool use)
+        has_assistant_messages = any(msg["role"] == "assistant" for msg in msg_history)
+        if not has_assistant_messages:
+            accumulated_content = response_accumulator.get_accumulated_content() if response_accumulator else "<thinking>"
+            msg_history.append({"role": "assistant", "content": accumulated_content})
+        else:
+            pass  # Let model continue from tool results
 
     try:
         return client.messages.create(
@@ -274,225 +341,86 @@ def call_anthropic(
     custom_thinking: bool = False,
 ) -> Generator[LLMChunk, None, None]:
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
-    # Handle tool use loop
     current_history = list(history)
 
-    while True:
-        params = {}
-        if thinking_budget > 0 and not custom_thinking:
-            params["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+    # Initialize response accumulator for custom thinking across tool calls
+    response_accumulator = ResponseAccumulator(custom_thinking) if custom_thinking else None
 
-        # Add tools if provided
-        if tools:
-            params["tools"] = [{"name": tool["name"], "description": tool["description"], "input_schema": tool["input_schema"]} for tool in tools]
+    try:
+        iteration_count = 0
+        while True:
+            iteration_count += 1
+            try:
+                response = create_anthropic_request(
+                    client, current_history, model, max_tokens, thinking_budget,
+                    custom_thinking, tools, stream, response_accumulator
+                )
+            except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
+                print("WARNING: falling back to google due to anthropic api error:", e)
+                return call_google(current_history, model, max_tokens, thinking_budget, stream, tools, settings, conversation_context, callbacks)
 
-        system, msg_history = split_system(current_history)
+            if stream:
+                message_content, stop_reason, tool_uses = yield from process_stream_events(
+                    response, response_accumulator
+                )
 
-        # Add preloaded assistant message for custom thinking
-        if custom_thinking:
-            msg_history = list(msg_history)
-            msg_history.append({"role": "assistant", "content": "<thinking>"})
+                # Update accumulator with new content
+                if response_accumulator:
+                    _update_response_accumulator(response_accumulator, message_content)
 
-        try:
-            response = client.messages.create(
-                model=model,
-                messages=msg_history,
-                system=system,
-                max_tokens=max_tokens,
-                stream=stream,
-                **params,
-            )
-        except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
-            print("WARNING: falling back to google due to anthropic api error:", e)
-            return call_google(current_history, model, max_tokens, thinking_budget, stream, tools, settings, conversation_context, callbacks)
+                if stop_reason == 'tool_use' and tool_uses:
+                    # Execute tools and add results to history normally
+                    current_history.append({"role": "assistant", "content": message_content})
+                    tool_results = execute_tool_calls(tool_uses, settings, conversation_context, callbacks)
+                    current_history.append({"role": "user", "content": tool_results})
 
-        if stream:
-            # For streaming with tools, we need to reconstruct the final message from events
-            # while also yielding the chunks
-            message_content = []
-            stop_reason = None
-            tool_uses = []
-            current_text = ""
-            current_tool_use = None
-            current_tool_json = ""
-
-            # Custom thinking state tracking
-            if custom_thinking:
-                accumulated_text = "<thinking>"
-                thinking_sent = 0
-                in_thinking_block = True
-                thinking_end_pattern = re.compile(r'(.*?)</thinking>(.*)', re.DOTALL)
-
-            with response as stream_response:
-                for event in stream_response:
-                    if event.type == "content_block_start":
-                        if event.content_block.type == "text":
-                            current_text = ""
-                        elif event.content_block.type == "tool_use":
-                            current_tool_use = {
-                                "type": "tool_use",
-                                "id": event.content_block.id,
-                                "name": event.content_block.name,
-                                "input": {}
-                            }
-                            current_tool_json = ""
-
-                    elif event.type == "content_block_delta":
-                        if event.delta.type == "text_delta":
-                            current_text += event.delta.text
-
-                            if custom_thinking:
-                                # Add new text to accumulated buffer
-                                accumulated_text += event.delta.text
-
-                                if in_thinking_block:
-                                    # Check if we've reached the end of thinking
-                                    match = thinking_end_pattern.search(accumulated_text)
-                                    if match:
-                                        # Found </thinking> - extract thinking content and any response after
-                                        thinking_content = match.group(1)
-                                        response_content = match.group(2)
-
-                                        # Extract just the thinking part (excluding the <thinking> tag)
-                                        thinking_text = thinking_content[len("<thinking>"):]
-
-                                        # Send any remaining thinking content we haven't sent yet
-                                        remaining_thinking = thinking_text[thinking_sent:]
-                                        if remaining_thinking:
-                                            yield LLMChunk(type="thinking", text=remaining_thinking)
-
-                                        # Switch to response mode
-                                        in_thinking_block = False
-
-                                        # Send any response content that came after </thinking>
-                                        if response_content:
-                                            yield LLMChunk(type="response", text=response_content)
-                                    else:
-                                        # Still in thinking block, send new thinking content
-                                        # Extract thinking text (excluding the <thinking> tag)
-                                        thinking_text = accumulated_text[len("<thinking>"):]
-
-                                        # Check if current accumulated text might contain a partial "</thinking>" at the end
-                                        # We'll be conservative and only send content that we're sure won't be part of the closing tag
-                                        safe_thinking_text = thinking_text
-                                        for partial in ["</think", "</thin", "</thi", "</th", "</t", "</"]:
-                                            if thinking_text.endswith(partial):
-                                                safe_thinking_text = thinking_text[:-len(partial)]
-                                                break
-
-                                        new_thinking = safe_thinking_text[thinking_sent:]
-                                        if new_thinking:
-                                            yield LLMChunk(type="thinking", text=new_thinking)
-                                            thinking_sent = len(safe_thinking_text)
-                                else:
-                                    # In response mode, just send as response
-                                    yield LLMChunk(type="response", text=event.delta.text)
-                            else:
-                                # Normal mode - yield as response
-                                yield LLMChunk(type="response", text=event.delta.text)
-
-                        elif event.delta.type == "thinking_delta":
-                            # Yield thinking content (for official thinking mode)
-                            yield LLMChunk(type="thinking", text=event.delta.thinking)
-                        elif event.delta.type == "input_json_delta":
-                            current_tool_json += event.delta.partial_json
-
-                    elif event.type == "content_block_stop":
-                        if current_text:
-                            message_content.append({"type": "text", "text": current_text})
-                            current_text = ""
-                        elif current_tool_use:
-                            # Parse the complete JSON input
-                            import json
-                            try:
-                                current_tool_use["input"] = json.loads(current_tool_json)
-                            except json.JSONDecodeError:
-                                current_tool_use["input"] = {}
-
-                            message_content.append(current_tool_use)
-                            tool_uses.append(current_tool_use)
-                            current_tool_use = None
-                            current_tool_json = ""
-
-                    elif event.type == "message_delta":
-                        if hasattr(event.delta, 'stop_reason'):
-                            stop_reason = event.delta.stop_reason
-
-            # Check if the final message requires tool use
-            if stop_reason == 'tool_use' and tool_uses:
-                # Add assistant message with tool uses to history
-                current_history.append({"role": "assistant", "content": message_content})
-
-                # Execute tools and add results
-                tool_results = []
-                for tool_use in tool_uses:
-                    if settings is None:
-                        settings = Settings()
-                    result = execute_tool(tool_use["name"], tool_use["input"], settings, conversation_context, callbacks)
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": tool_use["id"],
-                        "content": result
-                    })
-
-                # Add tool results to history
-                current_history.append({"role": "user", "content": tool_results})
-
-                # Continue the loop to get the final response
-                continue
+                    # Safety check for infinite loops
+                    if iteration_count > 10:
+                        print("ERROR: Too many iterations, breaking to prevent infinite loop")
+                        break
+                    continue
+                else:
+                    return
             else:
-                # No tool use, streaming is complete
-                return
+                # Non-streaming mode
+                if hasattr(response, 'stop_reason') and response.stop_reason == 'tool_use':
+                    tool_uses, response_content = _extract_tool_uses_nonstreaming(response)
 
-        # Handle tool use (non-streaming mode for now)
-        if not stream and hasattr(response, 'stop_reason') and response.stop_reason == 'tool_use':
-            # Extract tool uses from response
-            tool_uses = []
-            response_content = []
+                    # Process text content through thinking logic if needed
+                    for content_block in response.content:
+                        if content_block.type == 'text':
+                            text = content_block.text
 
-            for content_block in response.content:
-                if content_block.type == 'text':
-                    response_content.append({"type": "text", "text": content_block.text})
-                    if not stream:  # Only yield text in non-streaming mode here
-                        yield LLMChunk(type="response", text=content_block.text)
-                elif content_block.type == 'tool_use':
-                    tool_uses.append(content_block)
-                    response_content.append({
-                        "type": "tool_use",
-                        "id": content_block.id,
-                        "name": content_block.name,
-                        "input": content_block.input
-                    })
+                            if response_accumulator and response_accumulator.thinking_state:
+                                for chunk in handle_thinking_delta(response_accumulator.thinking_state, text):
+                                    yield chunk
+                            else:
+                                yield LLMChunk(type="response", text=text)
 
-            # Add assistant message with tool uses to history
-            current_history.append({"role": "assistant", "content": response_content})
+                    # Normal tool execution - add to history
+                    current_history.append({"role": "assistant", "content": response_content})
+                    tool_results = _execute_tool_uses_nonstreaming(tool_uses, settings, conversation_context, callbacks)
+                    current_history.append({"role": "user", "content": tool_results})
 
-            # Execute tools and add results
-            tool_results = []
-            for tool_use in tool_uses:
-                if settings is None:
-                    settings = Settings()
-                result = execute_tool(tool_use.name, tool_use.input, settings, conversation_context, callbacks)
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": tool_use.id,
-                    "content": result
-                })
+                    # Safety check for infinite loops
+                    if iteration_count > 10:
+                        print("ERROR: Too many iterations, breaking to prevent infinite loop")
+                        break
+                    continue
+                else:
+                    for content_block in response.content:
+                        if content_block.type == 'text':
+                            text = content_block.text
 
-            # Add tool results to history
-            current_history.append({"role": "user", "content": tool_results})
-
-            # Continue the loop to get the final response
-            continue
-        else:
-            # No tool use, return the response
-            if not stream:
-                # For non-streaming, yield the response content
-                for content_block in response.content:
-                    if content_block.type == 'text':
-                        yield LLMChunk(type="response", text=content_block.text)
-            return
+                            if response_accumulator and response_accumulator.thinking_state:
+                                for chunk in handle_thinking_delta(response_accumulator.thinking_state, text):
+                                    yield chunk
+                            else:
+                                yield LLMChunk(type="response", text=text)
+                    return
+    except Exception as e:
+        print(f"Error in call_anthropic: {e}")
+        raise
 
 
 def anthropic_stream(response):
@@ -708,9 +636,13 @@ def query_llm(
     else:
         thinking_budget = 0
 
+    # Disable thinking for tool use mode to avoid API format conflicts
+    if tools:
+        thinking_budget = 0
+
     if provider == ANTHROPIC:
-        # Use custom thinking by default for Anthropic when thinking budget > 0
-        use_custom_thinking = custom_thinking or thinking_budget > 0
+        # Temporarily disable custom thinking for tool use to test basic functionality
+        use_custom_thinking = custom_thinking and tools is None
         return func(
             history,
             settings.model_id,

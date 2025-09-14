@@ -237,7 +237,7 @@ class TestUtilityFunctions:
                 {"reference": "1", "title": "Test Doc", "text": "Content"}
             ]
 
-            with patch("stampy_chat.llms.format_tool_result") as mock_format:
+            with patch("stampy_chat.llms.format_blocks") as mock_format:
                 mock_format.return_value = "Formatted result"
 
                 result = execute_tool("retrieve_docs", {"query": "test"}, mock_settings)
@@ -257,7 +257,7 @@ class TestUtilityFunctions:
                 {"reference": "2", "title": "Test Doc 2", "text": "Content 2"}
             ]
 
-            with patch("stampy_chat.llms.format_tool_result") as mock_format:
+            with patch("stampy_chat.llms.format_blocks") as mock_format:
                 mock_format.return_value = "Formatted result"
 
                 result = execute_tool("retrieve_docs", {"query": "test"}, mock_settings, mock_context)

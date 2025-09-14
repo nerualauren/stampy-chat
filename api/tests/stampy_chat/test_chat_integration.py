@@ -1,16 +1,22 @@
 import pytest
 import re
+import logging
 from unittest.mock import patch
 
 from stampy_chat.chat import run_query
 from stampy_chat.settings import Settings, ANTHROPIC
 from stampy_chat.llms import RETRIEVE_DOCS_TOOL
 
+# Enable VCR logging to debug cassette issues
+logging.basicConfig()
+vcr_log = logging.getLogger("vcr")
+vcr_log.setLevel(logging.DEBUG)
+print("VCR logging enabled at DEBUG level")
+
 
 @pytest.mark.vcr
 def test_chat_end_to_end_with_tool_mode():
     """End-to-end test for chat functionality with tool mode enabled"""
-    import pudb; pudb.set_trace()
     import time
     start_time = time.time()
     print(f"Test started at {start_time}")
