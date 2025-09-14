@@ -223,3 +223,103 @@ def test_settings_validation_errors():
             historyFraction=0.8,  # Too large
             min_response_tokens=100
         )
+
+
+@pytest.mark.vcr
+def test_custom_thinking_integration():
+    """Integration test for custom thinking functionality"""
+    from stampy_chat.llms import query_llm, RETRIEVE_DOCS_TOOL
+
+    config = {
+        "model": "anthropic/claude-sonnet-4-20250514",
+        "thinking_budget": 0,  # Use custom thinking instead of official thinking
+        "tool_mode": True,
+        "maxNumTokens": 100000
+    }
+
+    settings = Settings(**config)
+
+    # Test query that should trigger custom thinking
+    history = [
+        {"role": "user", "content": "Please think carefully about AI alignment challenges and then provide a concise answer. Use the <thinking> tags to show your reasoning."}
+    ]
+
+    # Run with custom thinking enabled
+    result_chunks = list(query_llm(
+        history,
+        settings,
+        tools=[RETRIEVE_DOCS_TOOL],
+        stream=True,
+        custom_thinking=True
+    ))
+
+    # Should get both thinking and response chunks
+    thinking_chunks = [chunk for chunk in result_chunks if chunk["type"] == "thinking"]
+    response_chunks = [chunk for chunk in result_chunks if chunk["type"] == "response"]
+
+    # Verify we got some thinking content
+    assert len(thinking_chunks) > 0, "Should have thinking chunks with custom thinking enabled"
+
+    # Verify we got some response content
+    assert len(response_chunks) > 0, "Should have response chunks"
+
+    # Verify thinking content is meaningful
+    thinking_text = "".join(chunk["text"] for chunk in thinking_chunks)
+    assert len(thinking_text.strip()) > 10, "Thinking content should be substantial"
+
+    # Verify response content
+    response_text = "".join(chunk["text"] for chunk in response_chunks)
+    assert len(response_text.strip()) > 10, "Response content should be substantial"
+
+    print(f"Thinking content: {thinking_text}")
+    print(f"Response content: {response_text}")
+
+
+@pytest.mark.vcr
+def test_custom_thinking_with_tool_use_integration():
+    """Integration test for custom thinking with tool use"""
+    from stampy_chat.llms import query_llm, RETRIEVE_DOCS_TOOL
+
+    config = {
+        "model": "anthropic/claude-sonnet-4-20250514",
+        "thinking_budget": 0,
+        "tool_mode": True,
+        "maxNumTokens": 100000
+    }
+
+    settings = Settings(**config)
+
+    # Query that should trigger tool use within thinking
+    history = [
+        {"role": "user", "content": "I need you to search for information about mesa-optimization and then explain it. Please use <thinking> tags to show your reasoning process, including when you decide to search for information."}
+    ]
+
+    # Run with custom thinking - this should allow tool use within thinking blocks
+    result_chunks = list(query_llm(
+        history,
+        settings,
+        tools=[RETRIEVE_DOCS_TOOL],
+        stream=True,
+        custom_thinking=True
+    ))
+
+    # Collect chunks by type
+    thinking_chunks = [chunk for chunk in result_chunks if chunk["type"] == "thinking"]
+    response_chunks = [chunk for chunk in result_chunks if chunk["type"] == "response"]
+
+    # Should have both thinking and response content
+    assert len(thinking_chunks) > 0, "Should have thinking content when using custom thinking"
+    assert len(response_chunks) > 0, "Should have final response content"
+
+    # Assemble full texts
+    thinking_text = "".join(chunk["text"] for chunk in thinking_chunks)
+    response_text = "".join(chunk["text"] for chunk in response_chunks)
+
+    # The model should have been able to use tools during its thinking process
+    # We can't directly verify this from the chunks, but the response should contain
+    # information that could only come from the tool use
+    assert len(thinking_text.strip()) > 20, "Should have substantial thinking content"
+    assert len(response_text.strip()) > 20, "Should have substantial response content"
+
+    print(f"Thinking with tools: {thinking_text[:200]}...")
+    print(f"Response after tool use: {response_text[:200]}...")

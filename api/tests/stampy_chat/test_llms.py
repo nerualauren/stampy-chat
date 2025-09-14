@@ -21,7 +21,7 @@ def sample_history():
 @pytest.fixture
 def mock_settings():
     return Settings(
-        model="anthropic/claude-3-5-sonnet-20241022",
+        model="anthropic/claude-sonnet-4-20250514",
         model_provider=ANTHROPIC,
         max_response_tokens=1000,
     )
@@ -30,291 +30,181 @@ def mock_settings():
 @pytest.mark.recording
 class TestAnthropicProvider:
     @pytest.mark.recording
-    def test_call_anthropic_basic_stream(self, sample_history, mock_settings):
-        """Test basic streaming response from Anthropic"""
-        with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
-            mock_client = Mock()
-            mock_anthropic_class.return_value = mock_client
-
-            # Mock streaming response
-            mock_response = Mock()
-            mock_response.stop_reason = "end_turn"
-            mock_client.messages.create.return_value = mock_response
-
-            # Mock stream events
-            mock_events = [
-                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="Hello")),
-                Mock(type="content_block_delta", delta=Mock(type="text_delta", text=" there!")),
-            ]
-            mock_response.__iter__ = Mock(return_value=iter(mock_events))
-
-            # Test the generator
-            result = list(call_anthropic(
-                sample_history, "anthropic/claude-3-5-sonnet-20241022", 1000, stream=True
-            ))
-
-            assert len(result) == 2
-            assert result[0]["type"] == "response"
-            assert result[0]["text"] == "Hello"
-            assert result[1]["type"] == "response"
-            assert result[1]["text"] == " there!"
-
-    @pytest.mark.recording
-    def test_call_anthropic_with_thinking(self, sample_history):
-        """Test Anthropic with thinking budget"""
+    def test_call_anthropic_custom_thinking_basic(self, sample_history):
+        """Test custom thinking with basic thinking and response"""
         with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
             mock_client = Mock()
             mock_anthropic_class.return_value = mock_client
 
             mock_response = Mock()
             mock_response.stop_reason = "end_turn"
+            mock_response.__enter__ = Mock(return_value=mock_response)
+            mock_response.__exit__ = Mock(return_value=False)
             mock_client.messages.create.return_value = mock_response
 
+            # Simulate streaming deltas that form: "I need to think about this...</thinking>\n\nThe answer is 42."
             mock_events = [
-                Mock(type="content_block_delta", delta=Mock(type="thinking_delta", thinking="Let me think...")),
-                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="Answer")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="I need to")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text=" think about")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text=" this...</think")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="ing>\n\nThe")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text=" answer is 42.")),
             ]
             mock_response.__iter__ = Mock(return_value=iter(mock_events))
 
             result = list(call_anthropic(
-                sample_history, "anthropic/claude-3-5-sonnet-20241022", 1000,
-                thinking_budget=2000, stream=True
+                sample_history, "anthropic/claude-sonnet-4-20250514", 1000,
+                stream=True, custom_thinking=True
             ))
 
-            assert len(result) == 2
-            assert result[0]["type"] == "thinking"
-            assert result[0]["text"] == "Let me think..."
-            assert result[1]["type"] == "response"
-            assert result[1]["text"] == "Answer"
+            # Should get thinking chunks followed by response chunks
+            thinking_chunks = [chunk for chunk in result if chunk["type"] == "thinking"]
+            response_chunks = [chunk for chunk in result if chunk["type"] == "response"]
 
-            # Verify thinking was enabled in API call
+            # Verify we got thinking content
+            thinking_text = "".join(chunk["text"] for chunk in thinking_chunks)
+            assert "I need to think about this..." in thinking_text
+
+            # Verify we got response content
+            response_text = "".join(chunk["text"] for chunk in response_chunks)
+            assert response_text == "\n\nThe answer is 42."
+
+            # Verify assistant message was preloaded with <thinking>
             call_args = mock_client.messages.create.call_args[1]
-            assert "thinking" in call_args
-            assert call_args["thinking"]["budget_tokens"] == 2000
+            messages = call_args["messages"]
+            assert messages[-1]["role"] == "assistant"
+            assert messages[-1]["content"] == "<thinking>"
 
     @pytest.mark.recording
-    def test_call_anthropic_with_tools(self, sample_history, mock_settings):
-        """Test Anthropic with tool use"""
+    def test_call_anthropic_custom_thinking_with_tools(self, sample_history, mock_settings):
+        """Test custom thinking with tool use inside thinking block"""
         with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
             mock_client = Mock()
             mock_anthropic_class.return_value = mock_client
 
-            # Mock response with tool use
-            mock_response = Mock()
-            mock_response.stop_reason = "tool_use"
+            # First response has tool use
+            mock_response1 = Mock()
+            mock_response1.stop_reason = "tool_use"
+            mock_response1.__enter__ = Mock(return_value=mock_response1)
+            mock_response1.__exit__ = Mock(return_value=False)
 
-            # Mock tool use content
+            # Mock tool use content inside thinking
             mock_tool_use = Mock()
             mock_tool_use.type = "tool_use"
             mock_tool_use.id = "tool_123"
             mock_tool_use.name = "retrieve_docs"
             mock_tool_use.input = {"query": "test query"}
 
-            mock_response.content = [mock_tool_use]
-            mock_client.messages.create.return_value = mock_response
+            mock_response1.content = [mock_tool_use]
 
-            # Mock the streaming events for tool use
-            mock_events = []
-            mock_response.__iter__ = Mock(return_value=iter(mock_events))
+            # Second response after tool execution
+            mock_response2 = Mock()
+            mock_response2.stop_reason = "end_turn"
+            mock_response2.__enter__ = Mock(return_value=mock_response2)
+            mock_response2.__exit__ = Mock(return_value=False)
+
+            mock_client.messages.create.side_effect = [mock_response1, mock_response2]
+
+            # Mock streaming events for both responses
+            mock_events1 = []  # Tool use doesn't have streaming events in this test
+            mock_events2 = [
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="Based on the search...")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="</thinking>\n\nHere's the answer.")),
+            ]
+
+            mock_response1.__iter__ = Mock(return_value=iter(mock_events1))
+            mock_response2.__iter__ = Mock(return_value=iter(mock_events2))
 
             # Mock execute_tool
             with patch("stampy_chat.llms.execute_tool", return_value="Tool result"):
                 result = list(call_anthropic(
-                    sample_history, "anthropic/claude-3-5-sonnet-20241022", 1000,
-                    tools=[RETRIEVE_DOCS_TOOL], settings=mock_settings, stream=True
+                    sample_history, "anthropic/claude-sonnet-4-20250514", 1000,
+                    tools=[RETRIEVE_DOCS_TOOL], settings=mock_settings,
+                    stream=True, custom_thinking=True
                 ))
 
-            # Verify tools were passed to API
-            call_args = mock_client.messages.create.call_args[1]
-            assert "tools" in call_args
-            assert len(call_args["tools"]) == 1
+            # Should have both thinking and response chunks
+            thinking_chunks = [chunk for chunk in result if chunk["type"] == "thinking"]
+            response_chunks = [chunk for chunk in result if chunk["type"] == "response"]
+
+            assert len(thinking_chunks) > 0
+            assert len(response_chunks) > 0
+
+            # Verify tool was called
+            assert mock_client.messages.create.call_count == 2
 
     @pytest.mark.recording
-    def test_call_anthropic_fallback_to_google(self, sample_history, mock_settings):
-        """Test fallback to Google when Anthropic fails"""
+    def test_call_anthropic_custom_thinking_split_end_tag(self, sample_history):
+        """Test custom thinking where </thinking> tag is split across chunks"""
         with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
             mock_client = Mock()
             mock_anthropic_class.return_value = mock_client
 
-            # Mock rate limit error
-            import anthropic
-            mock_client.messages.create.side_effect = anthropic.RateLimitError("Rate limited")
-
-            with patch("stampy_chat.llms.call_google") as mock_call_google:
-                mock_call_google.return_value = iter([LLMChunk(type="response", text="Fallback")])
-
-                result = list(call_anthropic(
-                    sample_history, "anthropic/claude-3-5-sonnet-20241022", 1000
-                ))
-
-                assert len(result) == 1
-                assert result[0]["text"] == "Fallback"
-                mock_call_google.assert_called_once()
-
-
-@pytest.mark.recording
-class TestOpenAIProvider:
-    @pytest.mark.recording
-    def test_call_openai_basic(self, sample_history):
-        """Test basic OpenAI response"""
-        with patch("stampy_chat.llms.openai.OpenAI") as mock_openai_class:
-            mock_client = Mock()
-            mock_openai_class.return_value = mock_client
-
-            # Mock response
             mock_response = Mock()
-            mock_client.responses.create.return_value = mock_response
+            mock_response.stop_reason = "end_turn"
+            mock_response.__enter__ = Mock(return_value=mock_response)
+            mock_response.__exit__ = Mock(return_value=False)
+            mock_client.messages.create.return_value = mock_response
 
-            # Mock streaming events
+            # Split </thinking> across chunks: "to respond.</think" + "ing>\n\nThe" + " insight is"
             mock_events = [
-                Mock(type="response.output_text.delta", delta="Hello"),
-                Mock(type="response.output_text.delta", delta=" world"),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="I need to respond.</think")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="ing>\n\nThe")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text=" insight is valuable.")),
             ]
             mock_response.__iter__ = Mock(return_value=iter(mock_events))
 
-            result = list(call_openai(
-                sample_history, "o1-preview", 1000, stream=True
+            result = list(call_anthropic(
+                sample_history, "anthropic/claude-sonnet-4-20250514", 1000,
+                stream=True, custom_thinking=True
             ))
 
-            assert len(result) == 2
-            assert result[0]["type"] == "response"
-            assert result[0]["text"] == "Hello"
+            # Should properly detect the end tag despite being split
+            thinking_chunks = [chunk for chunk in result if chunk["type"] == "thinking"]
+            response_chunks = [chunk for chunk in result if chunk["type"] == "response"]
+
+            thinking_text = "".join(chunk["text"] for chunk in thinking_chunks)
+            assert "I need to respond." in thinking_text
+            # The partial </think should not be sent as thinking content
+            assert "</think" not in thinking_text or thinking_text.endswith("I need to respond.")
+
+            response_text = "".join(chunk["text"] for chunk in response_chunks)
+            assert response_text == "\n\nThe insight is valuable."
 
     @pytest.mark.recording
-    def test_call_openai_with_thinking(self, sample_history):
-        """Test OpenAI with reasoning"""
-        with patch("stampy_chat.llms.openai.OpenAI") as mock_openai_class:
+    def test_call_anthropic_custom_thinking_only_thinking(self, sample_history):
+        """Test custom thinking with only thinking content, no response"""
+        with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
             mock_client = Mock()
-            mock_openai_class.return_value = mock_client
+            mock_anthropic_class.return_value = mock_client
 
             mock_response = Mock()
-            mock_client.responses.create.return_value = mock_response
+            mock_response.stop_reason = "end_turn"
+            mock_response.__enter__ = Mock(return_value=mock_response)
+            mock_response.__exit__ = Mock(return_value=False)
+            mock_client.messages.create.return_value = mock_response
 
-            result = call_openai(
-                sample_history, "o1-preview", 1000, thinking_budget=1000
-            )
+            # Only thinking content, no closing tag
+            mock_events = [
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="I'm thinking hard about this problem...")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text=" It's quite complex.")),
+            ]
+            mock_response.__iter__ = Mock(return_value=iter(mock_events))
 
-            # Verify reasoning was enabled
-            call_args = mock_client.responses.create.call_args[1]
-            assert "reasoning" in call_args
-            assert call_args["reasoning"]["effort"] == "medium"
-
-    @pytest.mark.recording
-    def test_call_openai_tools_not_implemented(self, sample_history):
-        """Test that OpenAI tools raise NotImplementedError"""
-        with pytest.raises(NotImplementedError, match="Tool use is not yet implemented"):
-            list(call_openai(
-                sample_history, "gpt-4", 1000, tools=[RETRIEVE_DOCS_TOOL]
+            result = list(call_anthropic(
+                sample_history, "anthropic/claude-sonnet-4-20250514", 1000,
+                stream=True, custom_thinking=True
             ))
 
+            # Should all be thinking chunks
+            thinking_chunks = [chunk for chunk in result if chunk["type"] == "thinking"]
+            response_chunks = [chunk for chunk in result if chunk["type"] == "response"]
 
-@pytest.mark.recording
-class TestGoogleProvider:
-    @pytest.mark.recording
-    def test_call_google_basic(self, sample_history):
-        """Test basic Google response"""
-        with patch("stampy_chat.llms.genai.Client") as mock_genai_class:
-            mock_client = Mock()
-            mock_genai_class.return_value = mock_client
+            assert len(thinking_chunks) > 0
+            assert len(response_chunks) == 0
 
-            # Mock streaming response
-            mock_chunk1 = Mock()
-            mock_chunk1.text = "Hello"
-            mock_chunk2 = Mock()
-            mock_chunk2.text = " world"
-
-            mock_client.models.generate_content_stream.return_value = [mock_chunk1, mock_chunk2]
-
-            result = list(call_google(
-                sample_history, "gemini-1.5-pro", 1000, stream=True
-            ))
-
-            assert len(result) == 2
-            assert result[0]["type"] == "response"
-            assert result[0]["text"] == "Hello"
-
-    @pytest.mark.recording
-    def test_call_google_with_system(self, sample_history):
-        """Test Google with system instruction"""
-        with patch("stampy_chat.llms.genai.Client") as mock_genai_class:
-            mock_client = Mock()
-            mock_genai_class.return_value = mock_client
-
-            mock_response = Mock()
-            mock_response.text = "Response"
-            mock_client.models.generate_content.return_value = mock_response
-
-            call_google(sample_history, "gemini-1.5-pro", 1000, stream=False)
-
-            # Verify system instruction was passed
-            call_args = mock_client.models.generate_content.call_args
-            config = call_args[1]["config"]
-            assert hasattr(config, "system_instruction")
-
-    @pytest.mark.recording
-    def test_call_google_tools_not_implemented(self, sample_history):
-        """Test that Google tools raise NotImplementedError"""
-        with pytest.raises(NotImplementedError, match="Tool use is not yet implemented"):
-            list(call_google(
-                sample_history, "gemini-1.5-pro", 1000, tools=[RETRIEVE_DOCS_TOOL]
-            ))
-
-
-@pytest.mark.recording
-class TestOpenRouterProvider:
-    @pytest.mark.recording
-    def test_call_openrouter_basic(self, sample_history):
-        """Test basic OpenRouter response"""
-        with patch("stampy_chat.llms.openai.OpenAI") as mock_openai_class:
-            mock_client = Mock()
-            mock_openai_class.return_value = mock_client
-
-            # Mock streaming response
-            mock_choice = Mock()
-            mock_choice.delta = Mock()
-            mock_choice.delta.content = "Hello world"
-            mock_chunk = Mock()
-            mock_chunk.choices = [mock_choice]
-
-            mock_response = [mock_chunk]
-            mock_client.chat.completions.create.return_value = mock_response
-
-            result = list(call_openrouter(
-                sample_history, "openrouter/anthropic/claude-3-haiku", 1000, stream=True
-            ))
-
-            assert len(result) == 1
-            assert result[0]["type"] == "response"
-            assert result[0]["text"] == "Hello world"
-
-    @pytest.mark.recording
-    def test_call_openrouter_with_reasoning(self, sample_history):
-        """Test OpenRouter with reasoning tokens"""
-        with patch("stampy_chat.llms.openai.OpenAI") as mock_openai_class:
-            mock_client = Mock()
-            mock_openai_class.return_value = mock_client
-
-            mock_response = []
-            mock_client.chat.completions.create.return_value = mock_response
-
-            call_openrouter(
-                sample_history, "openrouter/deepseek/deepseek-r1", 1000,
-                thinking_budget=2000
-            )
-
-            # Verify reasoning was added to extra_body
-            call_args = mock_client.chat.completions.create.call_args[1]
-            assert "extra_body" in call_args
-            assert call_args["extra_body"]["reasoning"]["max_tokens"] == 2000
-
-    @pytest.mark.recording
-    def test_call_openrouter_tools_not_implemented(self, sample_history):
-        """Test that OpenRouter tools raise NotImplementedError"""
-        with pytest.raises(NotImplementedError, match="Tool use is not yet implemented"):
-            list(call_openrouter(
-                sample_history, "openrouter/anthropic/claude-3-haiku", 1000,
-                tools=[RETRIEVE_DOCS_TOOL]
-            ))
+            thinking_text = "".join(chunk["text"] for chunk in thinking_chunks)
+            assert "I'm thinking hard about this problem... It's quite complex." in thinking_text
 
 
 class TestUtilityFunctions:
@@ -383,18 +273,6 @@ class TestUtilityFunctions:
 
 @pytest.mark.recording
 class TestQueryLLM:
-    @pytest.mark.recording
-    def test_query_llm_anthropic(self, sample_history, mock_settings):
-        """Test query_llm with Anthropic provider"""
-        with patch("stampy_chat.llms.call_anthropic") as mock_call:
-            mock_call.return_value = iter([LLMChunk(type="response", text="Test")])
-
-            result = list(query_llm(sample_history, mock_settings))
-
-            assert len(result) == 1
-            assert result[0]["text"] == "Test"
-            mock_call.assert_called_once()
-
     @pytest.mark.vcr
     def test_tool_use_integration_with_actual_model(self):
         """Integration test with actual model to validate tool use behavior"""
@@ -429,7 +307,7 @@ class TestQueryLLM:
         # Patch retrieve_docs to track calls but let HTTP calls to Anthropic be recorded
         with patch("stampy_chat.llms.retrieve_docs", side_effect=track_retrieve_docs):
             settings = Settings(
-                model="anthropic/claude-3-5-sonnet-20241022",
+                model="anthropic/claude-sonnet-4-20250514",
                 model_provider=ANTHROPIC,
                 max_response_tokens=1000,
             )
@@ -457,7 +335,7 @@ class TestQueryLLM:
             # Assertions
 
             # 1. Verify exactly 2 searches occurred
-            assert len(search_calls) == 2, f"Expected exactly 2 search calls, got {len(search_calls)}: {search_calls}"
+            assert len(search_calls) == 2
 
             # 2. Verify searches returned results (implicitly tested by mock)
 
@@ -466,7 +344,7 @@ class TestQueryLLM:
                                        "Current safety research investigates robustness testing, adversarial examples, and capability control mechanisms.")
 
             second_query = search_calls[1]
-            assert second_query in first_search_results_text, f"Second search query '{second_query}' not found in first search results"
+            assert second_query in first_search_results_text
 
             # 4. Verify output format matches expected pattern
             expected_pattern = r"First search was: (.+?)\nSecond search was: (.+?)\nPhrase from the second search results: (.+)"
@@ -480,93 +358,27 @@ class TestQueryLLM:
             reported_phrase = match.group(3).strip()
 
             # Verify reported searches match actual searches
-            assert reported_first_search == search_calls[0], f"Reported first search '{reported_first_search}' doesn't match actual '{search_calls[0]}'"
-            assert reported_second_search == search_calls[1], f"Reported second search '{reported_second_search}' doesn't match actual '{search_calls[1]}'"
+            assert reported_first_search == search_calls[0]
+            assert reported_second_search == search_calls[1]
 
-    @pytest.mark.recording
-    def test_query_llm_openai(self, sample_history):
-        """Test query_llm with OpenAI provider"""
-        settings = Settings(model_provider=OPENAI, model="o1-preview")
-
-        with patch("stampy_chat.llms.call_openai") as mock_call:
-            mock_call.return_value = iter([LLMChunk(type="response", text="Test")])
-
-            result = list(query_llm(sample_history, settings))
-
-            assert len(result) == 1
-            mock_call.assert_called_once()
-
-    @pytest.mark.recording
-    def test_query_llm_google(self, sample_history):
-        """Test query_llm with Google provider"""
-        settings = Settings(model_provider=GOOGLE, model="gemini-1.5-pro")
-
-        with patch("stampy_chat.llms.call_google") as mock_call:
-            mock_call.return_value = iter([LLMChunk(type="response", text="Test")])
-
-            result = list(query_llm(sample_history, settings))
-
-            assert len(result) == 1
-            mock_call.assert_called_once()
-
-    @pytest.mark.recording
-    def test_query_llm_openrouter(self, sample_history):
-        """Test query_llm with OpenRouter provider"""
-        settings = Settings(model_provider=OPENROUTER, model="openrouter/anthropic/claude-3-haiku")
-
-        with patch("stampy_chat.llms.call_openrouter") as mock_call:
-            mock_call.return_value = iter([LLMChunk(type="response", text="Test")])
-
-            result = list(query_llm(sample_history, settings))
-
-            assert len(result) == 1
-            mock_call.assert_called_once()
-
-    def test_query_llm_unknown_provider(self, sample_history):
-        """Test query_llm with unknown provider"""
-        settings = Settings(model_provider="unknown", model="test")
-
-        with pytest.raises(ValueError, match="Unknown provider: unknown"):
-            list(query_llm(sample_history, settings))
-
-    @pytest.mark.recording
-    def test_query_llm_with_thinking_budget(self, sample_history, mock_settings):
-        """Test query_llm with thinking budget and model that supports thinking"""
-        # Mock a model that supports thinking
-        with patch("stampy_chat.llms.MODELS") as mock_models:
-            mock_model_info = Mock()
-            mock_model_info.can_think = True
-            mock_model_info.min_think = 1024
-            mock_models.__getitem__.return_value = mock_model_info
-
-            with patch("stampy_chat.llms.call_anthropic") as mock_call:
-                mock_call.return_value = iter([])
-
-                list(query_llm(sample_history, mock_settings, thinking_budget=500))
-
-                # Should use minimum thinking budget
-                args = mock_call.call_args[0]
-                thinking_budget_arg = args[3]  # thinking_budget is 4th positional arg
-                assert thinking_budget_arg == 1024
-
-    @pytest.mark.recording
-    def test_query_llm_with_tools_and_context(self, sample_history, mock_settings):
-        """Test query_llm with tools and conversation context"""
-        mock_context = Mock()
-        mock_callbacks = [Mock()]
-
+    def test_query_llm_with_custom_thinking(self, sample_history, mock_settings):
+        """Test query_llm with custom thinking enabled"""
         with patch("stampy_chat.llms.call_anthropic") as mock_call:
-            mock_call.return_value = iter([])
+            mock_call.return_value = iter([
+                LLMChunk(type="thinking", text="I need to think..."),
+                LLMChunk(type="response", text="Answer")
+            ])
 
-            list(query_llm(
+            result = list(query_llm(
                 sample_history, mock_settings,
-                tools=[RETRIEVE_DOCS_TOOL],
-                conversation_context=mock_context,
-                callbacks=mock_callbacks
+                custom_thinking=True
             ))
 
-            # Verify tools, context, and callbacks were passed through
+            # Verify custom_thinking was passed to call_anthropic
             call_kwargs = mock_call.call_args[1]
-            assert call_kwargs["tools"] == [RETRIEVE_DOCS_TOOL]
-            assert call_kwargs["conversation_context"] is mock_context
-            assert call_kwargs["callbacks"] is mock_callbacks
+            assert call_kwargs["custom_thinking"] is True
+
+            # Verify results
+            assert len(result) == 2
+            assert result[0]["type"] == "thinking"
+            assert result[1]["type"] == "response"

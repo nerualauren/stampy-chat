@@ -41,3 +41,17 @@ Javascript tools - excerpt from web/package.json:
   ...
 }
 ```
+
+VCR Testing:
+
+- Use `@pytest.mark.vcr` decorator for recording HTTP requests/responses
+- Recording modes:
+  - `--record-mode=once`: Record new requests only if cassette doesn't exist
+  - `--record-mode=new_episodes`: Add new requests to existing cassette
+  - `--record-mode=all`: Re-record everything (overwrites cassette)
+- Cassette files stored in `tests/cassettes/` by default
+- Common issues:
+  - Remove existing cassettes before recording with `--record-mode=once`
+  - Avoid variable name conflicts with stream objects in JSON serialization
+  - For streaming APIs like Anthropic, ensure proper event reconstruction
+- Run tests: `cd api && pipenv run pytest --record-mode=once path/to/test.py::test_name`

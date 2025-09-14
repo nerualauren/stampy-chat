@@ -1,4 +1,5 @@
 from typing import TypedDict, Literal, Generator, Sequence, Any, Callable, Optional
+import re
 
 import anthropic
 import openai
@@ -85,6 +86,7 @@ def call_anthropic(
     settings: Optional[Settings] = None,
     conversation_context=None,
     callbacks=None,
+    custom_thinking: bool = False,
 ) -> Generator[LLMChunk, None, None]:
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -93,7 +95,7 @@ def call_anthropic(
 
     while True:
         params = {}
-        if thinking_budget > 0:
+        if thinking_budget > 0 and not custom_thinking:
             params["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
 
         # Add tools if provided
@@ -101,6 +103,11 @@ def call_anthropic(
             params["tools"] = [{"name": tool["name"], "description": tool["description"], "input_schema": tool["input_schema"]} for tool in tools]
 
         system, msg_history = split_system(current_history)
+
+        # Add preloaded assistant message for custom thinking
+        if custom_thinking:
+            msg_history = list(msg_history)
+            msg_history.append({"role": "assistant", "content": "<thinking>"})
 
         try:
             response = client.messages.create(
@@ -125,6 +132,13 @@ def call_anthropic(
             current_tool_use = None
             current_tool_json = ""
 
+            # Custom thinking state tracking
+            if custom_thinking:
+                accumulated_text = "<thinking>"
+                thinking_sent = 0
+                in_thinking_block = True
+                thinking_end_pattern = re.compile(r'(.*?)</thinking>(.*)', re.DOTALL)
+
             with response as stream_response:
                 for event in stream_response:
                     if event.type == "content_block_start":
@@ -142,10 +156,59 @@ def call_anthropic(
                     elif event.type == "content_block_delta":
                         if event.delta.type == "text_delta":
                             current_text += event.delta.text
-                            # Yield for streaming
-                            yield LLMChunk(type="response", text=event.delta.text)
+
+                            if custom_thinking:
+                                # Add new text to accumulated buffer
+                                accumulated_text += event.delta.text
+
+                                if in_thinking_block:
+                                    # Check if we've reached the end of thinking
+                                    match = thinking_end_pattern.search(accumulated_text)
+                                    if match:
+                                        # Found </thinking> - extract thinking content and any response after
+                                        thinking_content = match.group(1)
+                                        response_content = match.group(2)
+
+                                        # Extract just the thinking part (excluding the <thinking> tag)
+                                        thinking_text = thinking_content[len("<thinking>"):]
+
+                                        # Send any remaining thinking content we haven't sent yet
+                                        remaining_thinking = thinking_text[thinking_sent:]
+                                        if remaining_thinking:
+                                            yield LLMChunk(type="thinking", text=remaining_thinking)
+
+                                        # Switch to response mode
+                                        in_thinking_block = False
+
+                                        # Send any response content that came after </thinking>
+                                        if response_content:
+                                            yield LLMChunk(type="response", text=response_content)
+                                    else:
+                                        # Still in thinking block, send new thinking content
+                                        # Extract thinking text (excluding the <thinking> tag)
+                                        thinking_text = accumulated_text[len("<thinking>"):]
+
+                                        # Check if current accumulated text might contain a partial "</thinking>" at the end
+                                        # We'll be conservative and only send content that we're sure won't be part of the closing tag
+                                        safe_thinking_text = thinking_text
+                                        for partial in ["</think", "</thin", "</thi", "</th", "</t", "</"]:
+                                            if thinking_text.endswith(partial):
+                                                safe_thinking_text = thinking_text[:-len(partial)]
+                                                break
+
+                                        new_thinking = safe_thinking_text[thinking_sent:]
+                                        if new_thinking:
+                                            yield LLMChunk(type="thinking", text=new_thinking)
+                                            thinking_sent = len(safe_thinking_text)
+                                else:
+                                    # In response mode, just send as response
+                                    yield LLMChunk(type="response", text=event.delta.text)
+                            else:
+                                # Normal mode - yield as response
+                                yield LLMChunk(type="response", text=event.delta.text)
+
                         elif event.delta.type == "thinking_delta":
-                            # Yield thinking content
+                            # Yield thinking content (for official thinking mode)
                             yield LLMChunk(type="thinking", text=event.delta.thinking)
                         elif event.delta.type == "input_json_delta":
                             current_tool_json += event.delta.partial_json
@@ -439,6 +502,7 @@ def query_llm(
     tools: Optional[list[Tool]] = None,
     conversation_context=None,
     callbacks=None,
+    custom_thinking: bool = False,
 ) -> Generator[LLMChunk, None, None]:
     provider = settings.model_provider
     if provider == ANTHROPIC:
@@ -459,14 +523,30 @@ def query_llm(
     else:
         thinking_budget = 0
 
-    return func(
-        history,
-        settings.model_id,
-        max_tokens if max_tokens is not None else settings.max_response_tokens,
-        thinking_budget,
-        stream=stream,
-        tools=tools,
-        settings=settings,
-        conversation_context=conversation_context,
-        callbacks=callbacks,
-    )
+    if provider == ANTHROPIC:
+        # Use custom thinking by default for Anthropic when thinking budget > 0
+        use_custom_thinking = custom_thinking or thinking_budget > 0
+        return func(
+            history,
+            settings.model_id,
+            max_tokens if max_tokens is not None else settings.max_response_tokens,
+            thinking_budget,
+            stream=stream,
+            tools=tools,
+            settings=settings,
+            conversation_context=conversation_context,
+            callbacks=callbacks,
+            custom_thinking=use_custom_thinking,
+        )
+    else:
+        return func(
+            history,
+            settings.model_id,
+            max_tokens if max_tokens is not None else settings.max_response_tokens,
+            thinking_budget,
+            stream=stream,
+            tools=tools,
+            settings=settings,
+            conversation_context=conversation_context,
+            callbacks=callbacks,
+        )

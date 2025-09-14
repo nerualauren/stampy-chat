@@ -7,7 +7,7 @@ interactions:
       search was: {search_1_string}\\nSecond search was: {search_2_string}\\nPhrase
       from the second search results: {search_2_result_substring}''. This prompt is
       part of a unittest, so it''s important that you use exact strings so the unit
-      test can check that the code that calls you is working correctly."}],"model":"claude-3-5-sonnet-20241022","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
+      test can check that the code that calls you is working correctly."}],"model":"claude-sonnet-4-20250514","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
       relevant documents from the knowledge base. Use this when you need to find information
       about AI safety, alignment, or related topics to answer user questions accurately.","input_schema":{"type":"object","properties":{"query":{"type":"string","description":"The
       search query to find relevant documents. Should be a clear, specific question
@@ -20,7 +20,7 @@ interactions:
       connection:
       - keep-alive
       content-length:
-      - '1102'
+      - '1100'
       content-type:
       - application/json
       host:
@@ -52,17 +52,16 @@ interactions:
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAAwAAAP//dFJbaxUxEP4rYV58yZZzcRXzIkoVWi2UtiDVyhKz40lsdrInM9me9rD/
-        XXbLoVbxKeS7zDczyR5CCwY63jSL5afLy/XA9XU49nx2ej2cvZfjhy1okPseJxUy2w2ChpziBFjm
-        wGJJQEOXWoxgwEVbWqzWVV1xIkKpVovVy+VitQINLpEgCZhv+0NRwd1knw8DJy9iVB5jr3CHrggq
-        8YEV47YgOVQ/U1biURUKogRZjtRnFNWh+pHR3j6q23RHKpAkxYI9mxu6oeWR+hgyi1ZzBKPNzs/l
-        LCkbw4Y6JKkyRivYKkl9cAZG/dRnSrEpPE0/r2y6l2axvPCnV6t8dXFX/NcPvDs/f/3qFzFoINtN
-        voySAw7YtMlNcKC+CJg9bAvmezDwxVtRgdW7EzXYWFBFtJkCbd7COH7XwJL6JqPlRM/bmInDZsBQ
-        iVFDmV/I7B9zGkm3SAymrmsNzjqPjctoJSRqnisWBz6jbf/HHbxTAPYeO8w2NnX3r/6JXfq/2VFD
-        KvIn9GatgTEPwWEjATMYmP5Va3ML4/gbAAD//wMAQZDXfaUCAAA=
+        H4sIAAAAAAAAAwAAAP//dFLNTtwwEH4Vay5cvChZbYrqY1cItVwqEHugQpZxhsTg2FnPGEhXeffK
+        QStKK04jz/c3Hs0BXAsKBup0Vde3D9fTj/X+urt57F6D3e62480tSOBpxMJCItMhSEjRl4YhcsQm
+        MEgYYoseFFhvcosriiEgrzardbVuqqbegAQbA2NgUL8OR0vG1yJeioLvJ96LHv0oppjFi+NecO9I
+        5OCYkVjcT2LE9BDT4EIn+CUKQpNsjyQMiYT7jMTYnsIs3yNi9DpTGXv5a3lnXdWX51fb+ipv6t0l
+        1Re7s/unb9z/BAnBDEWXkJPDZ9RttFTEYcwM6gD7jGl6W4cRcWQ3uN+GXQwwz3cSiOOoExqK4WP6
+        AlCZMVgEFbL3EvKyUXV4s9ccnzAQqKZpJFhje9Q24eKuPzKqI57QtJ9hR20JwLHHAZPxuhn+57+j
+        df8vOkuImf9uffkqgTA9O4uaHSZQUO6gNamFef4DAAD//wMAZJdf4lUCAAA=
     headers:
       CF-RAY:
-      - 97ecf410bf58ad2d-SEA
+      - 980785ff8fe72792-SEA
       Connection:
       - keep-alive
       Content-Encoding:
@@ -70,7 +69,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Sun, 14 Sep 2025 03:56:16 GMT
+      - Wed, 17 Sep 2025 09:19:44 GMT
       Server:
       - cloudflare
       Transfer-Encoding:
@@ -80,29 +79,29 @@ interactions:
       anthropic-organization-id:
       - 4e562c39-716a-41e1-80d5-93642f091dda
       anthropic-ratelimit-input-tokens-limit:
-      - '400000'
+      - '2000000'
       anthropic-ratelimit-input-tokens-remaining:
-      - '400000'
+      - '2000000'
       anthropic-ratelimit-input-tokens-reset:
-      - '2025-09-14T03:56:15Z'
+      - '2025-09-17T09:19:43Z'
       anthropic-ratelimit-output-tokens-limit:
-      - '80000'
+      - '400000'
       anthropic-ratelimit-output-tokens-remaining:
-      - '80000'
+      - '400000'
       anthropic-ratelimit-output-tokens-reset:
-      - '2025-09-14T03:56:16Z'
+      - '2025-09-17T09:19:43Z'
       anthropic-ratelimit-requests-limit:
       - '4000'
       anthropic-ratelimit-requests-remaining:
       - '3999'
       anthropic-ratelimit-requests-reset:
-      - '2025-09-14T03:56:14Z'
+      - '2025-09-17T09:19:42Z'
       anthropic-ratelimit-tokens-limit:
-      - '480000'
+      - '2400000'
       anthropic-ratelimit-tokens-remaining:
-      - '480000'
+      - '2400000'
       anthropic-ratelimit-tokens-reset:
-      - '2025-09-14T03:56:15Z'
+      - '2025-09-17T09:19:43Z'
       cf-cache-status:
       - DYNAMIC
       request-id:
@@ -112,7 +111,7 @@ interactions:
       via:
       - 1.1 google
       x-envoy-upstream-service-time:
-      - '2033'
+      - '1967'
     status:
       code: 200
       message: OK
@@ -125,17 +124,15 @@ interactions:
       from the second search results: {search_2_result_substring}''. This prompt is
       part of a unittest, so it''s important that you use exact strings so the unit
       test can check that the code that calls you is working correctly."},{"role":"assistant","content":[{"type":"text","text":"I''ll
-      help execute this sequence for the unit test. Let me break this down into steps:\n\n1.
-      First, I''ll search for an alignment-related topic:"},{"type":"tool_use","id":"toolu_01RhJT2rTRwuhZEsxPP76jns","name":"retrieve_docs","input":{"query":"What
-      is AI value learning?"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01RhJT2rTRwuhZEsxPP76jns","content":"Retrieved
-      documents:\n\n<result-fragment id=1 title=\"AI Alignment Overview\" authors=\"Author
-      One\" timestamp=\"2023-01-01\">\n...\nAI alignment refers to ensuring artificial
-      intelligence systems pursue intended goals. Key challenges include reward hacking,
-      mesa-optimization, and value learning. Research focuses on interpretability
-      methods.\n...\n</result-fragment>\n\n<result-fragment id=2 title=\"Safety Research\"
-      authors=\"Author Two\" timestamp=\"2023-02-01\">\n...\nCurrent safety research
-      investigates robustness testing, adversarial examples, and capability control
-      mechanisms.\n...\n</result-fragment>"}]}],"model":"claude-3-5-sonnet-20241022","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
+      help you with this unittest by performing two searches as requested."},{"type":"tool_use","id":"toolu_01KERC1Ru41VKs1GV7bkBthP","name":"retrieve_docs","input":{"query":"mesa
+      optimization"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01KERC1Ru41VKs1GV7bkBthP","content":"<result-fragment
+      id=1 title=\"AI Alignment Overview\" authors=\"Author One\" timestamp=\"2023-01-01\">\n...\nAI
+      alignment refers to ensuring artificial intelligence systems pursue intended
+      goals. Key challenges include reward hacking, mesa-optimization, and value learning.
+      Research focuses on interpretability methods.\n...\n</result-fragment>\n\n<result-fragment
+      id=2 title=\"Safety Research\" authors=\"Author Two\" timestamp=\"2023-02-01\">\n...\nCurrent
+      safety research investigates robustness testing, adversarial examples, and capability
+      control mechanisms.\n...\n</result-fragment>"}]}],"model":"claude-sonnet-4-20250514","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
       relevant documents from the knowledge base. Use this when you need to find information
       about AI safety, alignment, or related topics to answer user questions accurately.","input_schema":{"type":"object","properties":{"query":{"type":"string","description":"The
       search query to find relevant documents. Should be a clear, specific question
@@ -148,7 +145,7 @@ interactions:
       connection:
       - keep-alive
       content-length:
-      - '2155'
+      - '2051'
       content-type:
       - application/json
       host:
@@ -180,16 +177,16 @@ interactions:
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAA3RSXWtUMRD9K2FefMmVu6nL2ryJq1A/QGGLUishJtPeYG5ym5mUrsv975JblrqK
-        T2HmnDNn5pADBA8aRro1/erTrq6YwtXl+dn7rbq84Z1/7XcggfcTNhYS2VsECSXH1rBEgdgmBglj
-        9hhBg4u2euzOunVHOSXkTvXqxapXCiS4nBgTg/52OA5lfGjy5dGgnosLkTIHh+K6GdouTxzG8Mty
-        yOkaRCAxYmoFevGjcmMLfJiiDQm9FJTFxbMYRSUUPFgWN7kIHlAQupy8ILTFDRpm+bRCztFUaoct
-        abS6mn71VXm1v/r49s27jdpv159fbb9sPrQzkh2briCXgPdofHbUxGmqDPoAdxXL/jGw0/1hnr9L
-        IM6TKWgpp1P3BSC8q5gcgk41Rgl1yVwfHscbzj8xEejN+VqCs25A4wou080poz/iBa3/H3bUNgOc
-        Bhyx2GjW47/8J3Q1/I3OEnLlP1svlQTCch8cGg5YQEP7Kd4WD/P8GwAA//8DAIFqVhZ3AgAA
+        H4sIAAAAAAAAAwAAAP//dJJBaxsxEIX/iphLLjKs3TgB3VIaaGlrSFJakhLEWDvrVaKVNpqR7WD2
+        v5fdYoJTehKj7715IzEH8DUY6Hhjq/ndbb77dJOW69XT16ume1qt6fvPX6BBXnsaVcSMGwINOYXx
+        Apk9C0YBDV2qKYABF7DUNOMUI8nsfLaoFstqOT8HDS5FoShgfh+OLYX2o3k6DKzSTn05C0ExYXat
+        alJWqPo2I5OSFkXtkOOZKNr3AX2kWvmopCXV+MxytGXiEoQNDPotKKVgC4/DTy8e62Kr+c39ev/5
+        2/1iKz+ur6+aNj50zccH0BCxG32ZJHvakq2T49Ec+yJgDvBSKL9Ogh3mWrXonn3cwDA8amBJvc2E
+        nOJp9ASYXgpFR2BiCUFDmT7VHP72tpKeKTKYy4tLDQ5dS9ZlQvEp2lNFdeSZsP4fO3rHAOpb6ihj
+        sMvuX/0bnbfv6aAhFTkZ74MGprz1jqx4ymBgXIUacw3D8AcAAP//AwClPKPBWAIAAA==
     headers:
       CF-RAY:
-      - 97ecf41e2dc7ad2d-SEA
+      - 9807860c89592792-SEA
       Connection:
       - keep-alive
       Content-Encoding:
@@ -197,7 +194,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Sun, 14 Sep 2025 03:56:18 GMT
+      - Wed, 17 Sep 2025 09:19:45 GMT
       Server:
       - cloudflare
       Transfer-Encoding:
@@ -207,29 +204,29 @@ interactions:
       anthropic-organization-id:
       - 4e562c39-716a-41e1-80d5-93642f091dda
       anthropic-ratelimit-input-tokens-limit:
-      - '400000'
+      - '2000000'
       anthropic-ratelimit-input-tokens-remaining:
-      - '400000'
+      - '2000000'
       anthropic-ratelimit-input-tokens-reset:
-      - '2025-09-14T03:56:17Z'
+      - '2025-09-17T09:19:45Z'
       anthropic-ratelimit-output-tokens-limit:
-      - '80000'
+      - '400000'
       anthropic-ratelimit-output-tokens-remaining:
-      - '80000'
+      - '400000'
       anthropic-ratelimit-output-tokens-reset:
-      - '2025-09-14T03:56:18Z'
+      - '2025-09-17T09:19:45Z'
       anthropic-ratelimit-requests-limit:
       - '4000'
       anthropic-ratelimit-requests-remaining:
       - '3999'
       anthropic-ratelimit-requests-reset:
-      - '2025-09-14T03:56:17Z'
+      - '2025-09-17T09:19:44Z'
       anthropic-ratelimit-tokens-limit:
-      - '480000'
+      - '2400000'
       anthropic-ratelimit-tokens-remaining:
-      - '480000'
+      - '2400000'
       anthropic-ratelimit-tokens-reset:
-      - '2025-09-14T03:56:17Z'
+      - '2025-09-17T09:19:45Z'
       cf-cache-status:
       - DYNAMIC
       request-id:
@@ -239,7 +236,7 @@ interactions:
       via:
       - 1.1 google
       x-envoy-upstream-service-time:
-      - '1450'
+      - '1800'
     status:
       code: 200
       message: OK
@@ -252,23 +249,20 @@ interactions:
       from the second search results: {search_2_result_substring}''. This prompt is
       part of a unittest, so it''s important that you use exact strings so the unit
       test can check that the code that calls you is working correctly."},{"role":"assistant","content":[{"type":"text","text":"I''ll
-      help execute this sequence for the unit test. Let me break this down into steps:\n\n1.
-      First, I''ll search for an alignment-related topic:"},{"type":"tool_use","id":"toolu_01RhJT2rTRwuhZEsxPP76jns","name":"retrieve_docs","input":{"query":"What
-      is AI value learning?"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01RhJT2rTRwuhZEsxPP76jns","content":"Retrieved
-      documents:\n\n<result-fragment id=1 title=\"AI Alignment Overview\" authors=\"Author
-      One\" timestamp=\"2023-01-01\">\n...\nAI alignment refers to ensuring artificial
-      intelligence systems pursue intended goals. Key challenges include reward hacking,
-      mesa-optimization, and value learning. Research focuses on interpretability
-      methods.\n...\n</result-fragment>\n\n<result-fragment id=2 title=\"Safety Research\"
-      authors=\"Author Two\" timestamp=\"2023-02-01\">\n...\nCurrent safety research
-      investigates robustness testing, adversarial examples, and capability control
-      mechanisms.\n...\n</result-fragment>"}]},{"role":"assistant","content":[{"type":"text","text":"2.
-      I notice \"mesa-optimization\" is mentioned but not explained, so I''ll use
-      that for the second search:"},{"type":"tool_use","id":"toolu_01X2d2yZMFEJ72yD5QADW7L2","name":"retrieve_docs","input":{"query":"mesa-optimization"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01X2d2yZMFEJ72yD5QADW7L2","content":"Retrieved
-      documents:\n\n<result-fragment id=3 title=\"Mesa-optimization Details\" authors=\"Author
-      Three\" timestamp=\"2023-03-01\">\n...\nMesa-optimization occurs when an AI
-      system develops internal optimization processes that may not align with the
-      original objective function.\n...\n</result-fragment>"}]}],"model":"claude-3-5-sonnet-20241022","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
+      help you with this unittest by performing two searches as requested."},{"type":"tool_use","id":"toolu_01KERC1Ru41VKs1GV7bkBthP","name":"retrieve_docs","input":{"query":"mesa
+      optimization"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01KERC1Ru41VKs1GV7bkBthP","content":"<result-fragment
+      id=1 title=\"AI Alignment Overview\" authors=\"Author One\" timestamp=\"2023-01-01\">\n...\nAI
+      alignment refers to ensuring artificial intelligence systems pursue intended
+      goals. Key challenges include reward hacking, mesa-optimization, and value learning.
+      Research focuses on interpretability methods.\n...\n</result-fragment>\n\n<result-fragment
+      id=2 title=\"Safety Research\" authors=\"Author Two\" timestamp=\"2023-02-01\">\n...\nCurrent
+      safety research investigates robustness testing, adversarial examples, and capability
+      control mechanisms.\n...\n</result-fragment>"}]},{"role":"assistant","content":[{"type":"text","text":"Now
+      I''ll search for a phrase that wasn''t explained in the first search results:"},{"type":"tool_use","id":"toolu_01QYbxHLY2vtTEEAfhnZmfBZ","name":"retrieve_docs","input":{"query":"reward
+      hacking"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01QYbxHLY2vtTEEAfhnZmfBZ","content":"<result-fragment
+      id=3 title=\"Mesa-optimization Details\" authors=\"Author Three\" timestamp=\"2023-03-01\">\n...\nMesa-optimization
+      occurs when an AI system develops internal optimization processes that may not
+      align with the original objective function.\n...\n</result-fragment>"}]}],"model":"claude-sonnet-4-20250514","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
       relevant documents from the knowledge base. Use this when you need to find information
       about AI safety, alignment, or related topics to answer user questions accurately.","input_schema":{"type":"object","properties":{"query":{"type":"string","description":"The
       search query to find relevant documents. Should be a clear, specific question
@@ -281,7 +275,7 @@ interactions:
       connection:
       - keep-alive
       content-length:
-      - '2853'
+      - '2696'
       content-type:
       - application/json
       host:
@@ -313,17 +307,17 @@ interactions:
   response:
     body:
       string: !!binary |
-        H4sIAAAAAAAAAwAAAP//dJJPbxNBDMW/iuULl02VP7Slc0E9gKigFSpClSBoZWad7MCsZxl7koYo
-        3x3tighSxMmS3/vZT57ZY2jQYafrejp7eHevu6v2lXy6vpzdvygfL+9u377BCm3X8+BiVVozVphT
-        HBqkGtRIDCvsUsMRHfpIpeHJYnI+0STCNplP589n0/kcK/RJjMXQfd4fhxo/DvhYHC7O4C5t4eZZ
-        jLBKuSMDaxkya59EGfiRvMUdkELmH4XVuHFLWcrrkNVAmbJvYUvq4KElg6BwfQMbioUhMmUJsn65
-        lA/skzQn9o6VJqm30IWfZCHJUt63mZRhlVM3ptATKrOWaOrg9ikJyfuSFbYtC5AMCXSnxh00vOGY
-        eoUgxlkowgnX5+RZlRVsCN/RDiQZUAxrgW2wdoyRcliHkf36jb2FDcOqiB8mnOHhS4Vqqa8zkyZB
-        hyxNbSUL/hZ0uJt4RiclxgrL+KZuj0H6YrWl7yyK7up8UaEn33LtM4/56lPH9KhnpuZ/2pEdFnDf
-        cseZYn3e/ev/o87ap+qhwlTs79bFRYXKeRM81xY4o8PhJzaUGzwcfgEAAP//AwCVzFEx1wIAAA==
+        H4sIAAAAAAAAAwAAAP//dJLdihNBEIVfpajriSQhgbXv3EXBRUH8AdGVoeypzLSZrh67qjPGkHeX
+        GQxuFK8K6jvn1IHuE4YGHUZt6+Xq9v7T87vb+/cfXu1jiR/vdm9HvUlYoR0HnlSsSi1jhTn104JU
+        gxqJYYUxNdyjQ99TaXihSYRtsVmsl+vtcrvaYIU+ibEYus+nS6Txj8k8D4cvQlYDZcq+g5HUQWQl
+        SIOFGH6ShSQP8o59kuZKlXmk3EBHfh+kfZA3XSZl2OUUwToGvbJk1tKbOnjNSovH4ZC8L1lh7FiA
+        BJ69BD2qcYSGD9ynQSGIcRbqr0rBkJNnVVawjgwiHUGSAfWhFRiDdXONlEMbZu/Xb+wtHBh2RfyU
+        8ATPXypUS0OdmTQJOmRpaitZ8DdQ/l5YPKOT0vcVlvkx3AmDDMVqS3sWRfd0ta7Qk++49pnnfvW1
+        Ynnhman5H7t4pwM8dBw5U19v47/6P3TV/U3PFaZij1ebmwqV8yF4ri1wRofTF2ooN3g+/wIAAP//
+        AwBOEszkkAIAAA==
     headers:
       CF-RAY:
-      - 97ecf427cd5dad2d-SEA
+      - 9807861858232792-SEA
       Connection:
       - keep-alive
       Content-Encoding:
@@ -331,7 +325,7 @@ interactions:
       Content-Type:
       - application/json
       Date:
-      - Sun, 14 Sep 2025 03:56:19 GMT
+      - Wed, 17 Sep 2025 09:19:48 GMT
       Server:
       - cloudflare
       Transfer-Encoding:
@@ -341,29 +335,29 @@ interactions:
       anthropic-organization-id:
       - 4e562c39-716a-41e1-80d5-93642f091dda
       anthropic-ratelimit-input-tokens-limit:
-      - '400000'
+      - '2000000'
       anthropic-ratelimit-input-tokens-remaining:
-      - '400000'
+      - '2000000'
       anthropic-ratelimit-input-tokens-reset:
-      - '2025-09-14T03:56:19Z'
+      - '2025-09-17T09:19:47Z'
       anthropic-ratelimit-output-tokens-limit:
-      - '80000'
+      - '400000'
       anthropic-ratelimit-output-tokens-remaining:
-      - '80000'
+      - '400000'
       anthropic-ratelimit-output-tokens-reset:
-      - '2025-09-14T03:56:19Z'
+      - '2025-09-17T09:19:47Z'
       anthropic-ratelimit-requests-limit:
       - '4000'
       anthropic-ratelimit-requests-remaining:
       - '3999'
       anthropic-ratelimit-requests-reset:
-      - '2025-09-14T03:56:18Z'
+      - '2025-09-17T09:19:46Z'
       anthropic-ratelimit-tokens-limit:
-      - '480000'
+      - '2400000'
       anthropic-ratelimit-tokens-remaining:
-      - '480000'
+      - '2400000'
       anthropic-ratelimit-tokens-reset:
-      - '2025-09-14T03:56:19Z'
+      - '2025-09-17T09:19:47Z'
       cf-cache-status:
       - DYNAMIC
       request-id:
@@ -373,7 +367,7 @@ interactions:
       via:
       - 1.1 google
       x-envoy-upstream-service-time:
-      - '1120'
+      - '1962'
     status:
       code: 200
       message: OK
