@@ -37,11 +37,33 @@ RETRIEVE_DOCS_TOOL = Tool(
 )
 
 
-def execute_tool(tool_name: str, tool_input: dict[str, Any], settings: Settings) -> str:
+def execute_tool(tool_name: str, tool_input: dict[str, Any], settings: Settings, conversation_context=None, callbacks=None) -> str:
     """Execute a tool function and return the result as a string."""
     if tool_name == "retrieve_docs":
         query = tool_input.get("query", "")
         blocks = retrieve_docs(query, settings)
+
+        # Update citation indexes with offset for monotonic numbering
+        if conversation_context:
+            for block in blocks:
+                if "reference" in block:
+                    # Convert reference to integer, add offset, convert back
+                    try:
+                        ref_num = int(block["reference"])
+                        block["reference"] = str(ref_num + conversation_context.citation_id_offset)
+                    except (ValueError, TypeError):
+                        # If reference isn't numeric, leave as is
+                        pass
+
+            # Update the offset for future tool calls
+            conversation_context.citation_id_offset += len(blocks)
+            conversation_context.accumulated_citations.extend(blocks)
+
+            # Notify callbacks about accumulated citations
+            if callbacks:
+                for callback in callbacks:
+                    callback.on_citations_accumulated(blocks)
+
         return format_tool_result(blocks)
     else:
         return f"Error: Unknown tool '{tool_name}'"
@@ -61,6 +83,8 @@ def call_anthropic(
     stream: bool = True,
     tools: Optional[list[Tool]] = None,
     settings: Optional[Settings] = None,
+    conversation_context=None,
+    callbacks=None,
 ) -> Generator[LLMChunk, None, None]:
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -89,7 +113,7 @@ def call_anthropic(
             )
         except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
             print("WARNING: falling back to google due to anthropic api error:", e)
-            return call_google(current_history, model, max_tokens, thinking_budget, stream, tools, settings)
+            return call_google(current_history, model, max_tokens, thinking_budget, stream, tools, settings, conversation_context, callbacks)
 
         if stream:
             # For streaming with tools, we yield the chunks but also need to
@@ -168,7 +192,7 @@ def call_anthropic(
             for tool_use in tool_uses:
                 if settings is None:
                     settings = Settings()
-                result = execute_tool(tool_use.name, tool_use.input, settings)
+                result = execute_tool(tool_use.name, tool_use.input, settings, conversation_context, callbacks)
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": tool_use.id,
@@ -207,6 +231,8 @@ def call_openai(
     stream: bool = False,
     tools: Optional[list[Tool]] = None,
     settings: Optional[Settings] = None,
+    conversation_context=None,
+    callbacks=None,
 ) -> Generator[LLMChunk, None, None]:
     if tools:
         raise NotImplementedError("Tool use is not yet implemented for OpenAI provider")
@@ -245,6 +271,8 @@ def call_google(
     stream: bool = False,
     tools: Optional[list[Tool]] = None,
     settings: Optional[Settings] = None,
+    conversation_context=None,
+    callbacks=None,
 ) -> Generator[LLMChunk, None, None]:
     if tools:
         raise NotImplementedError("Tool use is not yet implemented for Google provider")
@@ -299,6 +327,8 @@ def call_openrouter(
     stream: bool = True,
     tools: Optional[list[Tool]] = None,
     settings: Optional[Settings] = None,
+    conversation_context=None,
+    callbacks=None,
 ) -> Generator[LLMChunk, None, None]:
     if tools:
         raise NotImplementedError("Tool use is not yet implemented for OpenRouter provider")
@@ -374,6 +404,8 @@ def query_llm(
     max_tokens: int | None = None,
     thinking_budget: int | None = None,
     tools: Optional[list[Tool]] = None,
+    conversation_context=None,
+    callbacks=None,
 ) -> Generator[LLMChunk, None, None]:
     provider = settings.model_provider
     if provider == ANTHROPIC:
@@ -402,4 +434,6 @@ def query_llm(
         stream=stream,
         tools=tools,
         settings=settings,
+        conversation_context=conversation_context,
+        callbacks=callbacks,
     )

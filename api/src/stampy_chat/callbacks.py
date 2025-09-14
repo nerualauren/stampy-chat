@@ -20,6 +20,9 @@ class CallbackHandler:
     def on_citations_retrieved(self, citations: list[Block]) -> None:
         pass
 
+    def on_citations_accumulated(self, citations: list[Block]) -> None:
+        pass
+
     def on_hyde_done(self, hypothetical_document: str) -> None:
         pass
 
@@ -52,6 +55,7 @@ class BroadcastCallbackHandler(CallbackHandler):
 
     def __init__(self, broadcaster, *args, **kwargs) -> None:
         self.broadcaster = broadcaster
+        self.accumulated_citations = []
         super().__init__(*args, **kwargs)
 
     def broadcast(self, value: Any) -> None:
@@ -81,6 +85,11 @@ class BroadcastCallbackHandler(CallbackHandler):
         self.broadcast({"state": "citations", "citations": citations})
         self.broadcast({"state": "loading", "phase": "prompt"})
 
+    def on_citations_accumulated(self, citations: list[Block]) -> None:
+        self.accumulated_citations.extend(citations)
+        self.broadcast({"state": "citations", "citations": self.accumulated_citations.copy()})
+        self.broadcast({"state": "loading", "phase": "prompt"})
+
     def on_llm_start(self) -> Any:
         self.broadcast({"state": "loading", "phase": "llm"})
 
@@ -107,6 +116,7 @@ class LoggerCallbackHandler(CallbackHandler):
         self.context = None
         self.prompted_history = None
         self.hyde = None
+        self.accumulated_citations = []
         super().__init__(*args, **kwargs)
 
     def on_history(self, history: list[Message]):
@@ -117,6 +127,10 @@ class LoggerCallbackHandler(CallbackHandler):
 
     def on_citations_retrieved(self, citations: list[Block]) -> None:
         self.context = citations
+
+    def on_citations_accumulated(self, citations: list[Block]) -> None:
+        self.accumulated_citations.extend(citations)
+        self.context = self.accumulated_citations.copy()
 
     def on_llm_end(self, response: str, **kwargs: Any) -> Any:
         try:

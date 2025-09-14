@@ -16,6 +16,13 @@ from stampy_chat.citations import retrieve_docs, Message
 from stampy_chat.prompts import inject_guidance, inject_guidance_hyde
 from stampy_chat.followups import search_followups, Followup
 
+
+class ConversationContext:
+    """Context object to track state across tool calls in a conversation."""
+    def __init__(self):
+        self.citation_id_offset = 0
+        self.accumulated_citations = []
+
 @functools.lru_cache(maxsize=128)
 def generate_hyde(query: str, history: frozendict, settings: Settings) -> str:
     hyde_history = inject_guidance_hyde(query, list(history), settings)
@@ -51,6 +58,8 @@ def run_query(
     :param Callable[[Any], None] callback: an optional callback that will be called at various key parts of the chain
     :returns: the result of the chain
     """
+    # Create conversation context for tracking citations across tool calls
+    context = ConversationContext()
     callbacks: list[CallbackHandler] = [
         LoggerCallbackHandler(session_id=session_id, query=query, history=history)
     ]
@@ -91,7 +100,7 @@ def run_query(
 
     response = ""
     tools = [RETRIEVE_DOCS_TOOL] if settings.tool_mode else None
-    for chunk in query_llm(prompted_history, settings, tools=tools):
+    for chunk in query_llm(prompted_history, settings, tools=tools, conversation_context=context, callbacks=callbacks):
         chunk_type, text = chunk.get("type"), chunk.get("text")
         if chunk_type == "thinking":
             for call in callbacks:
