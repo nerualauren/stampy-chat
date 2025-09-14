@@ -6,7 +6,7 @@ from google import genai
 from stampy_chat.settings import ANTHROPIC, OPENAI, GOOGLE, OPENROUTER, MODELS, Settings
 from stampy_chat.env import OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, OPENROUTER_API_KEY
 from stampy_chat.citations import Message, retrieve_docs
-from stampy_chat.prompts import format_tool_result
+from stampy_chat.prompts import format_blocks
 
 
 class LLMChunk(TypedDict):
@@ -64,7 +64,7 @@ def execute_tool(tool_name: str, tool_input: dict[str, Any], settings: Settings,
                 for callback in callbacks:
                     callback.on_citations_accumulated(blocks)
 
-        return format_tool_result(blocks)
+        return format_blocks(blocks)
     else:
         return f"Error: Unknown tool '{tool_name}'"
 

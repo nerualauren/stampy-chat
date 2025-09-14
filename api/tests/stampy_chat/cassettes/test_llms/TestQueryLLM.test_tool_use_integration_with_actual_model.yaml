@@ -1,0 +1,380 @@
+interactions:
+- request:
+    body: '{"max_tokens":4096,"messages":[{"role":"user","content":"1. do a search
+      for an alignment-related topic, then 2. select a phrase which is not explained
+      in the first search''s results and do a second search with exactly that phrase
+      as the query, then 3. respond to the user with exactly the format: f''First
+      search was: {search_1_string}\\nSecond search was: {search_2_string}\\nPhrase
+      from the second search results: {search_2_result_substring}''. This prompt is
+      part of a unittest, so it''s important that you use exact strings so the unit
+      test can check that the code that calls you is working correctly."}],"model":"claude-3-5-sonnet-20241022","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
+      relevant documents from the knowledge base. Use this when you need to find information
+      about AI safety, alignment, or related topics to answer user questions accurately.","input_schema":{"type":"object","properties":{"query":{"type":"string","description":"The
+      search query to find relevant documents. Should be a clear, specific question
+      or topic."}},"required":["query"]}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      content-length:
+      - '1102'
+      content-type:
+      - application/json
+      host:
+      - api.anthropic.com
+      user-agent:
+      - Anthropic/Python 0.62.0
+      x-stainless-arch:
+      - x64
+      x-stainless-async:
+      - 'false'
+      x-stainless-lang:
+      - python
+      x-stainless-os:
+      - Linux
+      x-stainless-package-version:
+      - 0.62.0
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.11.2
+      x-stainless-timeout:
+      - '600'
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//dFJbaxUxEP4rYV58yZZzcRXzIkoVWi2UtiDVyhKz40lsdrInM9me9rD/
+        XXbLoVbxKeS7zDczyR5CCwY63jSL5afLy/XA9XU49nx2ej2cvZfjhy1okPseJxUy2w2ChpziBFjm
+        wGJJQEOXWoxgwEVbWqzWVV1xIkKpVovVy+VitQINLpEgCZhv+0NRwd1knw8DJy9iVB5jr3CHrggq
+        8YEV47YgOVQ/U1biURUKogRZjtRnFNWh+pHR3j6q23RHKpAkxYI9mxu6oeWR+hgyi1ZzBKPNzs/l
+        LCkbw4Y6JKkyRivYKkl9cAZG/dRnSrEpPE0/r2y6l2axvPCnV6t8dXFX/NcPvDs/f/3qFzFoINtN
+        voySAw7YtMlNcKC+CJg9bAvmezDwxVtRgdW7EzXYWFBFtJkCbd7COH7XwJL6JqPlRM/bmInDZsBQ
+        iVFDmV/I7B9zGkm3SAymrmsNzjqPjctoJSRqnisWBz6jbf/HHbxTAPYeO8w2NnX3r/6JXfq/2VFD
+        KvIn9GatgTEPwWEjATMYmP5Va3ML4/gbAAD//wMAQZDXfaUCAAA=
+    headers:
+      CF-RAY:
+      - 97ecf410bf58ad2d-SEA
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Sun, 14 Sep 2025 03:56:16 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-organization-id:
+      - 4e562c39-716a-41e1-80d5-93642f091dda
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2025-09-14T03:56:15Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2025-09-14T03:56:16Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3999'
+      anthropic-ratelimit-requests-reset:
+      - '2025-09-14T03:56:14Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2025-09-14T03:56:15Z'
+      cf-cache-status:
+      - DYNAMIC
+      request-id:
+      - req_REDACTED
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      via:
+      - 1.1 google
+      x-envoy-upstream-service-time:
+      - '2033'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens":4096,"messages":[{"role":"user","content":"1. do a search
+      for an alignment-related topic, then 2. select a phrase which is not explained
+      in the first search''s results and do a second search with exactly that phrase
+      as the query, then 3. respond to the user with exactly the format: f''First
+      search was: {search_1_string}\\nSecond search was: {search_2_string}\\nPhrase
+      from the second search results: {search_2_result_substring}''. This prompt is
+      part of a unittest, so it''s important that you use exact strings so the unit
+      test can check that the code that calls you is working correctly."},{"role":"assistant","content":[{"type":"text","text":"I''ll
+      help execute this sequence for the unit test. Let me break this down into steps:\n\n1.
+      First, I''ll search for an alignment-related topic:"},{"type":"tool_use","id":"toolu_01RhJT2rTRwuhZEsxPP76jns","name":"retrieve_docs","input":{"query":"What
+      is AI value learning?"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01RhJT2rTRwuhZEsxPP76jns","content":"Retrieved
+      documents:\n\n<result-fragment id=1 title=\"AI Alignment Overview\" authors=\"Author
+      One\" timestamp=\"2023-01-01\">\n...\nAI alignment refers to ensuring artificial
+      intelligence systems pursue intended goals. Key challenges include reward hacking,
+      mesa-optimization, and value learning. Research focuses on interpretability
+      methods.\n...\n</result-fragment>\n\n<result-fragment id=2 title=\"Safety Research\"
+      authors=\"Author Two\" timestamp=\"2023-02-01\">\n...\nCurrent safety research
+      investigates robustness testing, adversarial examples, and capability control
+      mechanisms.\n...\n</result-fragment>"}]}],"model":"claude-3-5-sonnet-20241022","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
+      relevant documents from the knowledge base. Use this when you need to find information
+      about AI safety, alignment, or related topics to answer user questions accurately.","input_schema":{"type":"object","properties":{"query":{"type":"string","description":"The
+      search query to find relevant documents. Should be a clear, specific question
+      or topic."}},"required":["query"]}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      content-length:
+      - '2155'
+      content-type:
+      - application/json
+      host:
+      - api.anthropic.com
+      user-agent:
+      - Anthropic/Python 0.62.0
+      x-stainless-arch:
+      - x64
+      x-stainless-async:
+      - 'false'
+      x-stainless-lang:
+      - python
+      x-stainless-os:
+      - Linux
+      x-stainless-package-version:
+      - 0.62.0
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.11.2
+      x-stainless-timeout:
+      - '600'
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3RSXWtUMRD9K2FefMmVu6nL2ryJq1A/QGGLUishJtPeYG5ym5mUrsv975JblrqK
+        T2HmnDNn5pADBA8aRro1/erTrq6YwtXl+dn7rbq84Z1/7XcggfcTNhYS2VsECSXH1rBEgdgmBglj
+        9hhBg4u2euzOunVHOSXkTvXqxapXCiS4nBgTg/52OA5lfGjy5dGgnosLkTIHh+K6GdouTxzG8Mty
+        yOkaRCAxYmoFevGjcmMLfJiiDQm9FJTFxbMYRSUUPFgWN7kIHlAQupy8ILTFDRpm+bRCztFUaoct
+        abS6mn71VXm1v/r49s27jdpv159fbb9sPrQzkh2briCXgPdofHbUxGmqDPoAdxXL/jGw0/1hnr9L
+        IM6TKWgpp1P3BSC8q5gcgk41Rgl1yVwfHscbzj8xEejN+VqCs25A4wou080poz/iBa3/H3bUNgOc
+        Bhyx2GjW47/8J3Q1/I3OEnLlP1svlQTCch8cGg5YQEP7Kd4WD/P8GwAA//8DAIFqVhZ3AgAA
+    headers:
+      CF-RAY:
+      - 97ecf41e2dc7ad2d-SEA
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Sun, 14 Sep 2025 03:56:18 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-organization-id:
+      - 4e562c39-716a-41e1-80d5-93642f091dda
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2025-09-14T03:56:17Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2025-09-14T03:56:18Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3999'
+      anthropic-ratelimit-requests-reset:
+      - '2025-09-14T03:56:17Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2025-09-14T03:56:17Z'
+      cf-cache-status:
+      - DYNAMIC
+      request-id:
+      - req_REDACTED
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      via:
+      - 1.1 google
+      x-envoy-upstream-service-time:
+      - '1450'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens":4096,"messages":[{"role":"user","content":"1. do a search
+      for an alignment-related topic, then 2. select a phrase which is not explained
+      in the first search''s results and do a second search with exactly that phrase
+      as the query, then 3. respond to the user with exactly the format: f''First
+      search was: {search_1_string}\\nSecond search was: {search_2_string}\\nPhrase
+      from the second search results: {search_2_result_substring}''. This prompt is
+      part of a unittest, so it''s important that you use exact strings so the unit
+      test can check that the code that calls you is working correctly."},{"role":"assistant","content":[{"type":"text","text":"I''ll
+      help execute this sequence for the unit test. Let me break this down into steps:\n\n1.
+      First, I''ll search for an alignment-related topic:"},{"type":"tool_use","id":"toolu_01RhJT2rTRwuhZEsxPP76jns","name":"retrieve_docs","input":{"query":"What
+      is AI value learning?"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01RhJT2rTRwuhZEsxPP76jns","content":"Retrieved
+      documents:\n\n<result-fragment id=1 title=\"AI Alignment Overview\" authors=\"Author
+      One\" timestamp=\"2023-01-01\">\n...\nAI alignment refers to ensuring artificial
+      intelligence systems pursue intended goals. Key challenges include reward hacking,
+      mesa-optimization, and value learning. Research focuses on interpretability
+      methods.\n...\n</result-fragment>\n\n<result-fragment id=2 title=\"Safety Research\"
+      authors=\"Author Two\" timestamp=\"2023-02-01\">\n...\nCurrent safety research
+      investigates robustness testing, adversarial examples, and capability control
+      mechanisms.\n...\n</result-fragment>"}]},{"role":"assistant","content":[{"type":"text","text":"2.
+      I notice \"mesa-optimization\" is mentioned but not explained, so I''ll use
+      that for the second search:"},{"type":"tool_use","id":"toolu_01X2d2yZMFEJ72yD5QADW7L2","name":"retrieve_docs","input":{"query":"mesa-optimization"}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01X2d2yZMFEJ72yD5QADW7L2","content":"Retrieved
+      documents:\n\n<result-fragment id=3 title=\"Mesa-optimization Details\" authors=\"Author
+      Three\" timestamp=\"2023-03-01\">\n...\nMesa-optimization occurs when an AI
+      system develops internal optimization processes that may not align with the
+      original objective function.\n...\n</result-fragment>"}]}],"model":"claude-3-5-sonnet-20241022","stream":false,"system":"","tools":[{"name":"retrieve_docs","description":"Retrieve
+      relevant documents from the knowledge base. Use this when you need to find information
+      about AI safety, alignment, or related topics to answer user questions accurately.","input_schema":{"type":"object","properties":{"query":{"type":"string","description":"The
+      search query to find relevant documents. Should be a clear, specific question
+      or topic."}},"required":["query"]}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      content-length:
+      - '2853'
+      content-type:
+      - application/json
+      host:
+      - api.anthropic.com
+      user-agent:
+      - Anthropic/Python 0.62.0
+      x-stainless-arch:
+      - x64
+      x-stainless-async:
+      - 'false'
+      x-stainless-lang:
+      - python
+      x-stainless-os:
+      - Linux
+      x-stainless-package-version:
+      - 0.62.0
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.11.2
+      x-stainless-timeout:
+      - '600'
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//dJJPbxNBDMW/iuULl02VP7Slc0E9gKigFSpClSBoZWad7MCsZxl7koYo
+        3x3tighSxMmS3/vZT57ZY2jQYafrejp7eHevu6v2lXy6vpzdvygfL+9u377BCm3X8+BiVVozVphT
+        HBqkGtRIDCvsUsMRHfpIpeHJYnI+0STCNplP589n0/kcK/RJjMXQfd4fhxo/DvhYHC7O4C5t4eZZ
+        jLBKuSMDaxkya59EGfiRvMUdkELmH4XVuHFLWcrrkNVAmbJvYUvq4KElg6BwfQMbioUhMmUJsn65
+        lA/skzQn9o6VJqm30IWfZCHJUt63mZRhlVM3ptATKrOWaOrg9ikJyfuSFbYtC5AMCXSnxh00vOGY
+        eoUgxlkowgnX5+RZlRVsCN/RDiQZUAxrgW2wdoyRcliHkf36jb2FDcOqiB8mnOHhS4Vqqa8zkyZB
+        hyxNbSUL/hZ0uJt4RiclxgrL+KZuj0H6YrWl7yyK7up8UaEn33LtM4/56lPH9KhnpuZ/2pEdFnDf
+        cseZYn3e/ev/o87ap+qhwlTs79bFRYXKeRM81xY4o8PhJzaUGzwcfgEAAP//AwCVzFEx1wIAAA==
+    headers:
+      CF-RAY:
+      - 97ecf427cd5dad2d-SEA
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Sun, 14 Sep 2025 03:56:19 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-organization-id:
+      - 4e562c39-716a-41e1-80d5-93642f091dda
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2025-09-14T03:56:19Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2025-09-14T03:56:19Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3999'
+      anthropic-ratelimit-requests-reset:
+      - '2025-09-14T03:56:18Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2025-09-14T03:56:19Z'
+      cf-cache-status:
+      - DYNAMIC
+      request-id:
+      - req_REDACTED
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      via:
+      - 1.1 google
+      x-envoy-upstream-service-time:
+      - '1120'
+    status:
+      code: 200
+      message: OK
+version: 1
