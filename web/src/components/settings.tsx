@@ -171,6 +171,14 @@ export const ChatSettings = ({
           changeSettings([["thinking_budget"], checked ? 1024 : 0])
         }
       />
+      <Checkbox
+        checked={settings?.tool_mode || false}
+        field="tool_mode"
+        label="Enable Tool Mode"
+        updater={(checked: boolean) =>
+          changeSettings([["tool_mode"], checked])
+        }
+      />
 
       <SectionHeader text="Prompt options" />
       <NumberInput

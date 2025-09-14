@@ -219,6 +219,7 @@ const SETTINGS_PARSERS = {
   contextFraction: withDefault(0.5), //  the (approximate) fraction of num_tokens to use for context text before truncating
   enable_hyde: withDefault(false), //  whether to enable hyde functionality
   thinking_budget: withDefault(0), // 0 or >=1024
+  tool_mode: withDefault(false), //  whether to allow LLM to interactively invoke the context tool
   filters: withDefault(DEFAULT_FILTERS),
 };
 

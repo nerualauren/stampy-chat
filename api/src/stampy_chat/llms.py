@@ -6,6 +6,7 @@ from google import genai
 from stampy_chat.settings import ANTHROPIC, OPENAI, GOOGLE, OPENROUTER, MODELS, Settings
 from stampy_chat.env import OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY, OPENROUTER_API_KEY
 from stampy_chat.citations import Message, retrieve_docs
+from stampy_chat.prompts import format_tool_result
 
 
 class LLMChunk(TypedDict):
@@ -41,18 +42,7 @@ def execute_tool(tool_name: str, tool_input: dict[str, Any], settings: Settings)
     if tool_name == "retrieve_docs":
         query = tool_input.get("query", "")
         blocks = retrieve_docs(query, settings)
-        # Format the results as a readable string
-        if not blocks:
-            return "No relevant documents found."
-
-        result = "Retrieved documents:\n\n"
-        for block in blocks:
-            result += f"Title: {block['title']}\n"
-            result += f"Authors: {', '.join(block['authors']) if block['authors'] else 'Unknown'}\n"
-            result += f"Date: {block['date_published']}\n"
-            result += f"Text: {block['text']}\n"
-            result += f"URL: {block['url']}\n\n"
-        return result
+        return format_tool_result(blocks)
     else:
         return f"Error: Unknown tool '{tool_name}'"
 

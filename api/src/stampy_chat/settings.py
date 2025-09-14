@@ -156,6 +156,7 @@ class Settings:
     maxNumTokens: int = None
     maxCompletionTokens: int = None
     enable_hyde: bool = False
+    tool_mode: bool = False
     min_response_tokens: int = 10
     thinking_budget: int = 2048
     tokensBuffer: int = 100
@@ -174,6 +175,7 @@ class Settings:
         topKBlocks=None,
         maxNumTokens=None,
         enable_hyde=False,
+        tool_mode=False,
         min_response_tokens=10,
         thinking_budget=2048,
         tokensBuffer=100,
@@ -213,6 +215,7 @@ class Settings:
         object.__setattr__(self, "maxNumTokens", maxNumTokens)
         object.__setattr__(self, "maxCompletionTokens", maxCompletionTokens)
         object.__setattr__(self, "enable_hyde", enable_hyde)
+        object.__setattr__(self, "tool_mode", tool_mode)
         object.__setattr__(self, "min_response_tokens", min_response_tokens)
         object.__setattr__(self, "thinking_budget", thinking_budget)
         object.__setattr__(self, "tokensBuffer", tokensBuffer)
@@ -264,6 +267,7 @@ class Settings:
                 self.min_response_tokens,
                 self.thinking_budget,
                 self.enable_hyde,
+                self.tool_mode,
                 self.hyde_max_tokens,
                 freeze_deep(self.filters),
             )

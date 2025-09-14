@@ -11,7 +11,7 @@ from stampy_chat.callbacks import (
     LoggerCallbackHandler,
 )
 from stampy_chat.settings import Settings
-from stampy_chat.llms import query_llm
+from stampy_chat.llms import query_llm, RETRIEVE_DOCS_TOOL
 from stampy_chat.citations import retrieve_docs, Message
 from stampy_chat.prompts import inject_guidance, inject_guidance_hyde
 from stampy_chat.followups import search_followups, Followup
@@ -57,29 +57,41 @@ def run_query(
     if callback:
         callbacks += [BroadcastCallbackHandler(callback)]
 
-    # Convert history to frozendict for caching
-    frozen_history = tuple(frozendict(m) for m in history)
-    docs_settings = dataclasses.replace(settings, thinking_budget=0, max_response_tokens=settings.hyde_max_tokens)
-
-    retrieval_query = query
-    if settings.enable_hyde:
-        retrieval_query = generate_hyde(query, frozen_history, docs_settings)
+    if settings.tool_mode:
+        # With tool use, the LLM will retrieve documents automatically when needed
+        # We still need to create the basic prompted history without documents
+        prompted_history = inject_guidance(query, history, [], settings)
         for call in callbacks:
-            call.on_hyde_done(retrieval_query)
+            call.on_prompt(prompted_history, query, history)
+        # Set empty citations for logging purposes
+        for call in callbacks:
+            call.on_citations_retrieved([])
+    else:
+        # Use the traditional workflow with manual document retrieval
+        # Convert history to frozendict for caching
+        frozen_history = tuple(frozendict(m) for m in history)
+        docs_settings = dataclasses.replace(settings, thinking_budget=0, max_response_tokens=settings.hyde_max_tokens)
 
-    docs = retrieve_docs_cached(retrieval_query, docs_settings)
-    for call in callbacks:
-        call.on_citations_retrieved(docs)
+        retrieval_query = query
+        if settings.enable_hyde:
+            retrieval_query = generate_hyde(query, frozen_history, docs_settings)
+            for call in callbacks:
+                call.on_hyde_done(retrieval_query)
 
-    prompted_history = inject_guidance(query, history, docs, settings)
-    for call in callbacks:
-        call.on_prompt(prompted_history, query, history)
+        docs = retrieve_docs_cached(retrieval_query, docs_settings)
+        for call in callbacks:
+            call.on_citations_retrieved(docs)
+
+        prompted_history = inject_guidance(query, history, docs, settings)
+        for call in callbacks:
+            call.on_prompt(prompted_history, query, history)
 
     for call in callbacks:
         call.on_llm_start()
 
     response = ""
-    for chunk in query_llm(prompted_history, settings):
+    tools = [RETRIEVE_DOCS_TOOL] if settings.tool_mode else None
+    for chunk in query_llm(prompted_history, settings, tools=tools):
         chunk_type, text = chunk.get("type"), chunk.get("text")
         if chunk_type == "thinking":
             for call in callbacks:
