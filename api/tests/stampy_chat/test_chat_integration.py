@@ -7,7 +7,6 @@ from stampy_chat.settings import Settings, ANTHROPIC
 from stampy_chat.llms import RETRIEVE_DOCS_TOOL
 
 
-@pytest.mark.vcr
 def test_chat_end_to_end_with_tool_mode():
     """End-to-end test for chat functionality with tool mode enabled"""
 

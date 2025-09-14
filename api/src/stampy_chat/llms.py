@@ -116,42 +116,75 @@ def call_anthropic(
             return call_google(current_history, model, max_tokens, thinking_budget, stream, tools, settings, conversation_context, callbacks)
 
         if stream:
-            # For streaming with tools, we yield the chunks but also need to
-            # check for tool use after streaming completes
-            for chunk in anthropic_stream(response):
-                yield chunk
+            # For streaming with tools, we need to reconstruct the final message from events
+            # while also yielding the chunks
+            message_content = []
+            stop_reason = None
+            tool_uses = []
+            current_text = ""
+            current_tool_use = None
+            current_tool_json = ""
 
-            # After streaming completes, check if the response requires tool use
-            # The 'response' object contains the final state after streaming
-            if hasattr(response, 'stop_reason') and response.stop_reason == 'tool_use':
-                # Process tool uses like in non-streaming mode
-                tool_uses = []
-                response_content = []
+            with response as stream_response:
+                for event in stream_response:
+                    if event.type == "content_block_start":
+                        if event.content_block.type == "text":
+                            current_text = ""
+                        elif event.content_block.type == "tool_use":
+                            current_tool_use = {
+                                "type": "tool_use",
+                                "id": event.content_block.id,
+                                "name": event.content_block.name,
+                                "input": {}
+                            }
+                            current_tool_json = ""
 
-                for content_block in response.content:
-                    if content_block.type == 'text':
-                        response_content.append({"type": "text", "text": content_block.text})
-                    elif content_block.type == 'tool_use':
-                        tool_uses.append(content_block)
-                        response_content.append({
-                            "type": "tool_use",
-                            "id": content_block.id,
-                            "name": content_block.name,
-                            "input": content_block.input
-                        })
+                    elif event.type == "content_block_delta":
+                        if event.delta.type == "text_delta":
+                            current_text += event.delta.text
+                            # Yield for streaming
+                            yield LLMChunk(type="response", text=event.delta.text)
+                        elif event.delta.type == "thinking_delta":
+                            # Yield thinking content
+                            yield LLMChunk(type="thinking", text=event.delta.thinking)
+                        elif event.delta.type == "input_json_delta":
+                            current_tool_json += event.delta.partial_json
 
+                    elif event.type == "content_block_stop":
+                        if current_text:
+                            message_content.append({"type": "text", "text": current_text})
+                            current_text = ""
+                        elif current_tool_use:
+                            # Parse the complete JSON input
+                            import json
+                            try:
+                                current_tool_use["input"] = json.loads(current_tool_json)
+                            except json.JSONDecodeError:
+                                current_tool_use["input"] = {}
+
+                            message_content.append(current_tool_use)
+                            tool_uses.append(current_tool_use)
+                            current_tool_use = None
+                            current_tool_json = ""
+
+                    elif event.type == "message_delta":
+                        if hasattr(event.delta, 'stop_reason'):
+                            stop_reason = event.delta.stop_reason
+
+            # Check if the final message requires tool use
+            if stop_reason == 'tool_use' and tool_uses:
                 # Add assistant message with tool uses to history
-                current_history.append({"role": "assistant", "content": response_content})
+                current_history.append({"role": "assistant", "content": message_content})
 
                 # Execute tools and add results
                 tool_results = []
                 for tool_use in tool_uses:
                     if settings is None:
                         settings = Settings()
-                    result = execute_tool(tool_use.name, tool_use.input, settings, conversation_context, callbacks)
+                    result = execute_tool(tool_use["name"], tool_use["input"], settings, conversation_context, callbacks)
                     tool_results.append({
                         "type": "tool_result",
-                        "tool_use_id": tool_use.id,
+                        "tool_use_id": tool_use["id"],
                         "content": result
                     })
 
