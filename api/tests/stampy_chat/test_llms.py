@@ -27,9 +27,7 @@ def mock_settings():
     )
 
 
-@pytest.mark.recording
 class TestAnthropicProvider:
-    @pytest.mark.recording
     def test_call_anthropic_custom_thinking_basic(self, sample_history):
         """Test custom thinking with basic thinking and response"""
         with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
@@ -75,7 +73,6 @@ class TestAnthropicProvider:
             assert messages[-1]["role"] == "assistant"
             assert messages[-1]["content"] == "<thinking>"
 
-    @pytest.mark.recording
     def test_call_anthropic_custom_thinking_with_tools(self, sample_history, mock_settings):
         """Test custom thinking with tool use inside thinking block"""
         with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
@@ -106,10 +103,21 @@ class TestAnthropicProvider:
             mock_client.messages.create.side_effect = [mock_response1, mock_response2]
 
             # Mock streaming events for both responses
-            mock_events1 = []  # Tool use doesn't have streaming events in this test
+            # First response: tool use with content_block_start and message_delta events
+            mock_events1 = [
+                Mock(type="content_block_start", content_block=Mock(type="tool_use", id="tool_123", name="retrieve_docs")),
+                Mock(type="content_block_delta", delta=Mock(type="input_json_delta", partial_json='{"query": "test query"}')),
+                Mock(type="content_block_stop"),
+                Mock(type="message_delta", delta=Mock(stop_reason="tool_use"))
+            ]
+
+            # Second response: thinking and response content
             mock_events2 = [
-                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="Based on the search...")),
+                Mock(type="content_block_start", content_block=Mock(type="text")),
+                Mock(type="content_block_delta", delta=Mock(type="text_delta", text="Based on the search, I need to think about this...")),
                 Mock(type="content_block_delta", delta=Mock(type="text_delta", text="</thinking>\n\nHere's the answer.")),
+                Mock(type="content_block_stop"),
+                Mock(type="message_delta", delta=Mock(stop_reason="end_turn"))
             ]
 
             mock_response1.__iter__ = Mock(return_value=iter(mock_events1))
@@ -133,7 +141,6 @@ class TestAnthropicProvider:
             # Verify tool was called
             assert mock_client.messages.create.call_count == 2
 
-    @pytest.mark.recording
     def test_call_anthropic_custom_thinking_split_end_tag(self, sample_history):
         """Test custom thinking where </thinking> tag is split across chunks"""
         with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
@@ -171,7 +178,6 @@ class TestAnthropicProvider:
             response_text = "".join(chunk["text"] for chunk in response_chunks)
             assert response_text == "\n\nThe insight is valuable."
 
-    @pytest.mark.recording
     def test_call_anthropic_custom_thinking_only_thinking(self, sample_history):
         """Test custom thinking with only thinking content, no response"""
         with patch("stampy_chat.llms.anthropic.Anthropic") as mock_anthropic_class:
@@ -271,7 +277,6 @@ class TestUtilityFunctions:
         assert result == "Error: Unknown tool 'unknown_tool'"
 
 
-@pytest.mark.recording
 class TestQueryLLM:
     @pytest.mark.vcr
     def test_tool_use_integration_with_actual_model(self):

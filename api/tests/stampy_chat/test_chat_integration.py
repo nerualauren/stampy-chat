@@ -7,8 +7,17 @@ from stampy_chat.settings import Settings, ANTHROPIC
 from stampy_chat.llms import RETRIEVE_DOCS_TOOL
 
 
+@pytest.mark.vcr
 def test_chat_end_to_end_with_tool_mode():
     """End-to-end test for chat functionality with tool mode enabled"""
+    import pudb; pudb.set_trace()
+    import time
+    start_time = time.time()
+    print(f"Test started at {start_time}")
+
+    def log_timing(step):
+        elapsed = time.time() - start_time
+        print(f"TIMING: {step} - {elapsed:.2f}s elapsed")
 
     # Test configuration from the user (the one not working on web)
     test_config = {
@@ -52,8 +61,12 @@ def test_chat_end_to_end_with_tool_mode():
     test_query = "What are the main challenges in AI alignment research?"
     test_history = []
 
+    log_timing("Config setup complete")
+
     # Create settings object
     settings = Settings(**test_config)
+
+    log_timing("Settings object created")
 
     # Verify settings were created correctly
     assert settings.tool_mode == True
@@ -64,6 +77,8 @@ def test_chat_end_to_end_with_tool_mode():
     assert settings.topKBlocks == 50
     assert settings.maxNumTokens == 200000
 
+    log_timing("About to call run_query")
+
     # Run the chat query end-to-end (this will use real tools and record everything)
     result = run_query(
         session_id="test_session",
@@ -73,6 +88,8 @@ def test_chat_end_to_end_with_tool_mode():
         callback=None,
         followups=False  # Disable followups to simplify test
     )
+
+    log_timing("run_query completed")
 
     # Verify result structure
     assert "response" in result

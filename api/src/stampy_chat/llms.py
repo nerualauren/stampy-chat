@@ -76,6 +76,191 @@ def split_system(history: Sequence[Message]) -> tuple[str, list[Message]]:
     return system, history
 
 
+class ThinkingState:
+    """Manages custom thinking block parsing state"""
+    def __init__(self):
+        self.accumulated_text = "<thinking>"
+        self.thinking_sent = 0
+        self.in_thinking_block = True
+        self.thinking_end_pattern = re.compile(r'(.*?)</thinking>(.*)', re.DOTALL)
+
+
+class StreamState:
+    """Manages streaming response reconstruction state"""
+    def __init__(self):
+        self.message_content = []
+        self.stop_reason = None
+        self.tool_uses = []
+        self.current_text = ""
+        self.current_tool_use = None
+        self.current_tool_json = ""
+
+
+def handle_thinking_delta(thinking_state: ThinkingState, delta_text: str) -> Generator[LLMChunk, None, None]:
+    """Process custom thinking block text and yield thinking/response chunks"""
+    thinking_state.accumulated_text += delta_text
+
+    if thinking_state.in_thinking_block:
+        # Check if we've reached the end of thinking
+        match = thinking_state.thinking_end_pattern.search(thinking_state.accumulated_text)
+        if match:
+            # Found </thinking> - extract thinking content and any response after
+            thinking_content = match.group(1)
+            response_content = match.group(2)
+
+            # Extract just the thinking part (excluding the <thinking> tag)
+            thinking_text = thinking_content[len("<thinking>"):]
+
+            # Send any remaining thinking content we haven't sent yet
+            remaining_thinking = thinking_text[thinking_state.thinking_sent:]
+            if remaining_thinking:
+                yield LLMChunk(type="thinking", text=remaining_thinking)
+
+            # Switch to response mode
+            thinking_state.in_thinking_block = False
+
+            # Send any response content that came after </thinking>
+            if response_content:
+                yield LLMChunk(type="response", text=response_content)
+        else:
+            # Still in thinking block, send new thinking content
+            thinking_text = thinking_state.accumulated_text[len("<thinking>"):]
+
+            # Check if current accumulated text might contain a partial "</thinking>" at the end
+            # Be conservative and only send content that we're sure won't be part of the closing tag
+            safe_thinking_text = thinking_text
+            for partial in ["</think", "</thin", "</thi", "</th", "</t", "</"]:
+                if thinking_text.endswith(partial):
+                    safe_thinking_text = thinking_text[:-len(partial)]
+                    break
+
+            new_thinking = safe_thinking_text[thinking_state.thinking_sent:]
+            if new_thinking:
+                yield LLMChunk(type="thinking", text=new_thinking)
+                thinking_state.thinking_sent = len(safe_thinking_text)
+    else:
+        # In response mode, just send as response
+        yield LLMChunk(type="response", text=delta_text)
+
+
+def process_stream_events(
+    stream_response,
+    custom_thinking: bool,
+) -> Generator[LLMChunk, None, tuple[list, str, list]]:
+    """Process streaming events and yield chunks, returning final state"""
+    stream_state = StreamState()
+    thinking_state = ThinkingState() if custom_thinking else None
+
+    for event in stream_response:
+        if event.type == "content_block_start":
+            if event.content_block.type == "text":
+                stream_state.current_text = ""
+            elif event.content_block.type == "tool_use":
+                stream_state.current_tool_use = {
+                    "type": "tool_use",
+                    "id": event.content_block.id,
+                    "name": event.content_block.name,
+                    "input": {}
+                }
+                stream_state.current_tool_json = ""
+
+        elif event.type == "content_block_delta":
+            if event.delta.type == "text_delta":
+                stream_state.current_text += event.delta.text
+
+                if custom_thinking and thinking_state:
+                    yield from handle_thinking_delta(thinking_state, event.delta.text)
+                else:
+                    yield LLMChunk(type="response", text=event.delta.text)
+
+            elif event.delta.type == "thinking_delta":
+                yield LLMChunk(type="thinking", text=event.delta.thinking)
+            elif event.delta.type == "input_json_delta":
+                stream_state.current_tool_json += event.delta.partial_json
+
+        elif event.type == "content_block_stop":
+            if stream_state.current_text:
+                stream_state.message_content.append({"type": "text", "text": stream_state.current_text})
+                stream_state.current_text = ""
+            elif stream_state.current_tool_use:
+                # Parse the complete JSON input
+                import json
+                try:
+                    stream_state.current_tool_use["input"] = json.loads(stream_state.current_tool_json)
+                except json.JSONDecodeError:
+                    stream_state.current_tool_use["input"] = {}
+
+                stream_state.message_content.append(stream_state.current_tool_use)
+                stream_state.tool_uses.append(stream_state.current_tool_use)
+                stream_state.current_tool_use = None
+                stream_state.current_tool_json = ""
+
+        elif event.type == "message_delta":
+            if hasattr(event.delta, 'stop_reason'):
+                stream_state.stop_reason = event.delta.stop_reason
+
+    return stream_state.message_content, stream_state.stop_reason, stream_state.tool_uses
+
+
+def execute_tool_calls(
+    tool_uses: list,
+    settings: Settings,
+    conversation_context,
+    callbacks
+) -> list:
+    """Execute tool calls and return tool results"""
+    tool_results = []
+    for tool_use in tool_uses:
+        if settings is None:
+            settings = Settings()
+        result = execute_tool(tool_use["name"], tool_use["input"], settings, conversation_context, callbacks)
+        tool_results.append({
+            "type": "tool_result",
+            "tool_use_id": tool_use["id"],
+            "content": result
+        })
+    return tool_results
+
+
+def create_anthropic_request(
+    client,
+    current_history: list[Message],
+    model: str,
+    max_tokens: int,
+    thinking_budget: int,
+    custom_thinking: bool,
+    tools: Optional[list[Tool]],
+    stream: bool
+):
+    """Create and execute Anthropic API request"""
+    params = {}
+    if thinking_budget > 0 and not custom_thinking:
+        params["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+
+    if tools:
+        params["tools"] = [{"name": tool["name"], "description": tool["description"], "input_schema": tool["input_schema"]} for tool in tools]
+
+    system, msg_history = split_system(current_history)
+
+    # Add preloaded assistant message for custom thinking
+    if custom_thinking:
+        msg_history = list(msg_history)
+        msg_history.append({"role": "assistant", "content": "<thinking>"})
+
+    try:
+        return client.messages.create(
+            model=model,
+            messages=msg_history,
+            system=system,
+            max_tokens=max_tokens,
+            stream=stream,
+            **params,
+        )
+    except (anthropic.RateLimitError, anthropic.InternalServerError) as e:
+        print("WARNING: falling back to google due to anthropic api error:", e)
+        raise  # Re-raise to trigger fallback
+
+
 def call_anthropic(
     history: Sequence[Message],
     model: str,
