@@ -80,14 +80,28 @@ def run_query(
 
     response = ""
     for chunk in query_llm(prompted_history, settings):
-        chunk_type, text = chunk.get("type"), chunk.get("text")
+        chunk_type = chunk.get("type")
+
         if chunk_type == "thinking":
             for call in callbacks:
-                call.on_thinking(text)
+                call.on_thinking(chunk.get("text"))
         elif chunk_type == "response":
-            response += text
+            response += chunk.get("text")
             for call in callbacks:
-                call.on_response(text)
+                call.on_response(chunk.get("text"))
+        elif chunk_type == "tool_use":
+            for call in callbacks:
+                call.on_tool_use(
+                    chunk.get("tool_name"),
+                    chunk.get("tool_id"),
+                    chunk.get("tool_input")
+                )
+        elif chunk_type == "tool_result":
+            for call in callbacks:
+                call.on_tool_result(
+                    chunk.get("tool_id"),
+                    chunk.get("tool_result")
+                )
 
     for call in callbacks:
         call.on_llm_end(response)

@@ -37,6 +37,12 @@ class CallbackHandler:
     def on_response(self, response: str) -> None:
         pass
 
+    def on_tool_use(self, tool_name: str, tool_id: str, tool_input: dict) -> None:
+        pass
+
+    def on_tool_result(self, tool_id: str, tool_result: str) -> None:
+        pass
+
     def on_llm_end(self, response, **kwargs: Any) -> Any:
         pass
 
@@ -86,6 +92,12 @@ class BroadcastCallbackHandler(CallbackHandler):
 
     def on_thinking(self, thinking: str) -> None:
         self.broadcast({"state": "thinking", "content": thinking})
+
+    def on_tool_use(self, tool_name: str, tool_id: str, tool_input: dict) -> None:
+        self.broadcast({"state": "tool_use", "tool_name": tool_name, "tool_id": tool_id, "tool_input": tool_input})
+
+    def on_tool_result(self, tool_id: str, tool_result: str) -> None:
+        self.broadcast({"state": "tool_result", "tool_id": tool_id, "tool_result": tool_result})
 
     def on_followups_start(self, inputs: dict[str, Any]) -> None:
         self.broadcast({"state": "loading", "phase": "followups"})
