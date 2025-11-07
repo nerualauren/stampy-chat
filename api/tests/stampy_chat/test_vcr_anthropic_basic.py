@@ -1,36 +1,32 @@
 """
-Basic VCR test for Anthropic API interactions.
+Basic VCR test for Anthropic API interactions using pytest-recording.
 
-This test validates that vcrpy correctly records and replays Anthropic API calls.
+This test validates that pytest-recording correctly records and replays Anthropic API calls.
 """
 import os
 import pytest
-import vcr
 import anthropic
 
 
-# Configure VCR to filter sensitive data
-vcr_config = vcr.VCR(
-    cassette_library_dir="tests/cassettes",
-    filter_headers=["authorization", "x-api-key"],
-    filter_post_data_parameters=["api_key"],
-    record_mode="once",  # Record once, then replay
-    match_on=["method", "scheme", "host", "port", "path", "query"],
-)
-
-
 @pytest.mark.vcr
-@vcr_config.use_cassette("test_anthropic_basic.yaml")
 def test_anthropic_basic_message():
-    """Test basic Anthropic API call with VCR recording/replay."""
+    """Test basic Anthropic API call with VCR recording/replay.
+
+    This test will:
+    - On first run (with ANTHROPIC_API_KEY_DEV set): Record the API interaction to a cassette
+    - On subsequent runs: Replay from the cassette without making real API calls
+
+    The cassette will be automatically created at:
+    tests/cassettes/test_stampy_chat/test_vcr_anthropic_basic/test_anthropic_basic_message.yaml
+    """
     # Get API key from environment, or use dummy key for replay
-    # VCR will intercept the HTTP call, so the dummy key won't be used
+    # pytest-recording will intercept the HTTP call, so the dummy key won't actually be sent
     api_key = os.getenv("ANTHROPIC_API_KEY_DEV") or "sk-ant-dummy-key-for-vcr-replay"
 
     # Create Anthropic client
     client = anthropic.Anthropic(api_key=api_key)
 
-    # Make a simple API call with a short prompt
+    # Make a simple API call with a short prompt to minimize API usage
     message = client.messages.create(
         model="claude-sonnet-4-5-20250929",
         max_tokens=10,

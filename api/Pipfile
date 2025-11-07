@@ -31,7 +31,7 @@ sentry-sdk = {version = "*", extras = ["flask", "pure_eval"]}
 pytest = "*"
 pytest-cov = "*"
 coverage = "*"
-vcrpy = "*"
+pytest-recording = "*"
 
 [requires]
 python_version = "3.11"
