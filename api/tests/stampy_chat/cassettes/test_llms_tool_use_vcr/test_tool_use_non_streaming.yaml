@@ -1,0 +1,227 @@
+interactions:
+- request:
+    body: '{"max_tokens":500,"messages":[{"role":"user","content":"Use the calculator
+      to add 100 and 200."}],"model":"claude-sonnet-4-5-20250929","stream":false,"system":"","tools":[{"name":"calculator","description":"Perform
+      basic arithmetic operations","input_schema":{"type":"object","properties":{"operation":{"type":"string","enum":["add","multiply"],"description":"The
+      arithmetic operation to perform"},"a":{"type":"number","description":"First
+      number"},"b":{"type":"number","description":"Second number"}},"required":["operation","a","b"]}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      anthropic-version:
+      - '2023-06-01'
+      connection:
+      - keep-alive
+      content-length:
+      - '538'
+      content-type:
+      - application/json
+      host:
+      - api.anthropic.com
+      user-agent:
+      - Anthropic/Python 0.72.0
+      x-api-key:
+      - REDACTED
+      x-stainless-arch:
+      - x64
+      x-stainless-async:
+      - 'false'
+      x-stainless-lang:
+      - python
+      x-stainless-os:
+      - Linux
+      x-stainless-package-version:
+      - 0.72.0
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.11.14
+      x-stainless-timeout:
+      - '600'
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//dJFdS8MwFIb/y3udQlrtcLlzEy/EgUPwEwkxOWx1adLlQ5ij/106KU7F
+        y3Oe9+U5IXu03pCFgLYqGyqid45ScVrURcWrmk+rKRgaA4E2riQvr5tkGne7mCzPZ5vLGV3czK7O
+        H8CQdh0NKYpRrQgMwdthoWJsYlIugUF7l8gliOf9mE/eW5kjjZZhzpKXj/X9nd+ttrs5Lbunk/ni
+        rftYaDA41Q49razOViUfhqbrcoLYw3cUVGq8G8TGgEFBlJwzvEJUnPf9C0NMvpOBVDzEjg44gEjb
+        TE4ThMvWMuTDc8T+SyKT35CLEJOqZtBKr0nqQAen/JngIw+kzH9s7A4C6tbUUlBW1u3f/Dct179p
+        z+BzOl6d1QyRwnujSaaGAgSGTzAqGPT9JwAAAP//AwC2g3zI9wEAAA==
+    headers:
+      CF-RAY:
+      - 99a9d5514ad4e20f-ORD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 07 Nov 2025 03:44:42 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-organization-id:
+      - 53c266df-54c5-4563-922c-15786e95534d
+      anthropic-ratelimit-input-tokens-limit:
+      - '450000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '450000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2025-11-07T03:44:41Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '90000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '90000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2025-11-07T03:44:42Z'
+      anthropic-ratelimit-requests-limit:
+      - '1000'
+      anthropic-ratelimit-requests-remaining:
+      - '999'
+      anthropic-ratelimit-requests-reset:
+      - '2025-11-07T03:44:38Z'
+      anthropic-ratelimit-tokens-limit:
+      - '540000'
+      anthropic-ratelimit-tokens-remaining:
+      - '540000'
+      anthropic-ratelimit-tokens-reset:
+      - '2025-11-07T03:44:41Z'
+      cf-cache-status:
+      - DYNAMIC
+      request-id:
+      - req_011CUsqhMPSYYFBoardJxTKt
+      retry-after:
+      - '20'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-envoy-upstream-service-time:
+      - '3555'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens":500,"messages":[{"role":"user","content":"Use the calculator
+      to add 100 and 200."},{"role":"assistant","content":[{"type":"tool_use","id":"toolu_01Y5WVoygqyCeQpZ3CMjpzMc","name":"calculator","input":{"operation":"add","a":100,"b":200}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_01Y5WVoygqyCeQpZ3CMjpzMc","content":"{\"result\":
+      300}"}]}],"model":"claude-sonnet-4-5-20250929","stream":false,"system":"","tools":[{"name":"calculator","description":"Perform
+      basic arithmetic operations","input_schema":{"type":"object","properties":{"operation":{"type":"string","enum":["add","multiply"],"description":"The
+      arithmetic operation to perform"},"a":{"type":"number","description":"First
+      number"},"b":{"type":"number","description":"Second number"}},"required":["operation","a","b"]}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      anthropic-version:
+      - '2023-06-01'
+      connection:
+      - keep-alive
+      content-length:
+      - '821'
+      content-type:
+      - application/json
+      host:
+      - api.anthropic.com
+      user-agent:
+      - Anthropic/Python 0.72.0
+      x-api-key:
+      - REDACTED
+      x-stainless-arch:
+      - x64
+      x-stainless-async:
+      - 'false'
+      x-stainless-lang:
+      - python
+      x-stainless-os:
+      - Linux
+      x-stainless-package-version:
+      - 0.72.0
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.11.14
+      x-stainless-timeout:
+      - '600'
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3SQTUsDMRCG/0qY45KV7Gppm5vQXjxV9FAQCelm7EZ3kzUzEbXsf5ctFr/wNPA+
+        zzDDe4A+OuxAQ9PZ7LCkGAJyeVHOylrVM7WslyDBO9DQ096oaruj1Xa9u9m+X603w+bx8tq28xVI
+        4LcBJwuJ7B5BQordFFgiT2wDg4QmBsbAoO8OJ5/xdSLHoeG2RZGQcsciPgjrnA97USklbHCiVkp4
+        EkVxrlRRnMF4L4E4DiahpRhAAwZnOKcAn4DwOWNoEHTIXSchH1/TB/BhyGw4PmEg0PN6IaGxTYum
+        SWjZx2B+GurEE1r3HzvtTgdwaLHHZDsz6//6X7Rqf9NRQsz8PaoWEgjTi2/QsMcEGqZCnU0OxvED
+        AAD//wMAoa1lMsMBAAA=
+    headers:
+      CF-RAY:
+      - 99a9d5680f69e20f-ORD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 07 Nov 2025 03:44:45 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-organization-id:
+      - 53c266df-54c5-4563-922c-15786e95534d
+      anthropic-ratelimit-input-tokens-limit:
+      - '450000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '450000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2025-11-07T03:44:45Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '90000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '90000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2025-11-07T03:44:45Z'
+      anthropic-ratelimit-requests-limit:
+      - '1000'
+      anthropic-ratelimit-requests-remaining:
+      - '999'
+      anthropic-ratelimit-requests-reset:
+      - '2025-11-07T03:44:42Z'
+      anthropic-ratelimit-tokens-limit:
+      - '540000'
+      anthropic-ratelimit-tokens-remaining:
+      - '540000'
+      anthropic-ratelimit-tokens-reset:
+      - '2025-11-07T03:44:45Z'
+      cf-cache-status:
+      - DYNAMIC
+      request-id:
+      - req_011CUsqhcyoabXcwYiu7GE6X
+      retry-after:
+      - '15'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-envoy-upstream-service-time:
+      - '3670'
+    status:
+      code: 200
+      message: OK
+version: 1

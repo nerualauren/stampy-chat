@@ -1,0 +1,242 @@
+interactions:
+- request:
+    body: '{"max_tokens":4096,"messages":[{"role":"user","content":"Think carefully
+      about this: use the calculator to compute 7 times 8, then explain what you did."}],"model":"claude-sonnet-4-5-20250929","stream":false,"system":"","thinking":{"type":"enabled","budget_tokens":2048},"tools":[{"name":"calculator","description":"Perform
+      basic arithmetic operations","input_schema":{"type":"object","properties":{"operation":{"type":"string","enum":["add","multiply"],"description":"The
+      arithmetic operation to perform"},"a":{"type":"number","description":"First
+      number"},"b":{"type":"number","description":"Second number"}},"required":["operation","a","b"]}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      anthropic-version:
+      - '2023-06-01'
+      connection:
+      - keep-alive
+      content-length:
+      - '647'
+      content-type:
+      - application/json
+      host:
+      - api.anthropic.com
+      user-agent:
+      - Anthropic/Python 0.72.0
+      x-api-key:
+      - REDACTED
+      x-stainless-arch:
+      - x64
+      x-stainless-async:
+      - 'false'
+      x-stainless-lang:
+      - python
+      x-stainless-os:
+      - Linux
+      x-stainless-package-version:
+      - 0.72.0
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.11.14
+      x-stainless-timeout:
+      - '600'
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3RUXXOqOhT9K5m8lrZA+ZI3RVsBvyoq1uMZJ0AUKiRAElE7/vcz9N7ennvP3Kck
+        e621VzKzdj5gQROcQxvGORIJvmeUEMzvtXv9XpVVXe6oHSjBLIE2LNhhJyuLKPQrfZleO3qqrQ22
+        8vThqg8lyC8lblmYMXTAUII1zdsCYixjHBEOJRhTwjHh0P7x8cXnaUaOGTm0Hb62NlykGAiGa9Ag
+        whkoMODU3hLlASwZBjzFIEZ5LHLEaQ04BTEtSsExMAHPCsyAtSXqAxicyxxlBDQp4sAFSZZsyZa4
+        gGCctCrxZ6+9IDHPKAFNxlN7S+4BLXGN2pINtrAQOc/K/LKFLYRsYLZrZLeGWzLCvL1qQgFPEX+A
+        EmTZgSAu6valAzF2nOOb68wPjn/sBXNP1t0A58/Y6lyeeuhSTzZlwjX6TvdmTwvCpXXN/P6YnFih
+        0GHh9imeDzqqM3GCgpuXOuJ+VVVWzxuGnlleU3meDg5XXZ5Uxlk0eDzzjf5igPrd1xUK3x5Ps8qZ
+        ZWu6urhNoGbzMmSv5iI33gdydrqoE1M7+vTuJbCuo2p9Ld+i/mIpr3T3zq+sWdqsZJVY1YsbFAx1
+        fEZ7p9Gmd9bCRdSrzsrVG/XXurI2Ri9sHZJOrCbGcEIWgUHKoomGm+5beMfz2UKP0JPsvT7vhS9v
+        ouG85njpuaFheOErMcbnabepLRLNH72Vuy/2+vn6fFGGvjV5b5Trycw09TJ5lLl/8HrDS0dx8WNX
+        07pYeTU3SVhfuTPX0DhK1pYaK87SoPmkEEpPf1Hihh4rd+peTHxmXVeUznE6GymEuG52d3CP3Vl/
+        35An5q7Kzt1BBPv8LJfySVmaWKQkz4J+d4r6ExZZdEqmi+6jHD/LKFi5T4129ueHHrxJ36mmNN8J
+        hr9mpz2Lnax0vKU/nizOzvL5nXadzVul6O8KlCBBRav7TmKrJKXg0P6A/0Swna+/EwgliKBtSjCC
+        tnW7/ZQg47Tc1RixT95vN/gEGK4EJjGGNhF5LkHxOaX2x18uO06PmDBoG4YuwRjFKd7FNf403f2b
+        IX/hNUbJ/2Ff2tYAlykucI3ynV78yf9GlfS/6E2CVPDfS4puSpDh+pTFeMczXEMbtp9LguoE3m6/
+        AAAA//8DAAMY44rPBAAA
+    headers:
+      CF-RAY:
+      - 99a9d9028e40116f-ORD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 07 Nov 2025 03:47:14 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-organization-id:
+      - 53c266df-54c5-4563-922c-15786e95534d
+      anthropic-ratelimit-input-tokens-limit:
+      - '450000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '450000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2025-11-07T03:47:12Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '90000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '90000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2025-11-07T03:47:14Z'
+      anthropic-ratelimit-requests-limit:
+      - '1000'
+      anthropic-ratelimit-requests-remaining:
+      - '999'
+      anthropic-ratelimit-requests-reset:
+      - '2025-11-07T03:47:09Z'
+      anthropic-ratelimit-tokens-limit:
+      - '540000'
+      anthropic-ratelimit-tokens-remaining:
+      - '540000'
+      anthropic-ratelimit-tokens-reset:
+      - '2025-11-07T03:47:12Z'
+      cf-cache-status:
+      - DYNAMIC
+      request-id:
+      - req_011CUsqtVzR6YUuJB8FznCog
+      retry-after:
+      - '50'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-envoy-upstream-service-time:
+      - '4120'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens":4096,"messages":[{"role":"user","content":"Think carefully
+      about this: use the calculator to compute 7 times 8, then explain what you did."},{"role":"assistant","content":[{"signature":"EuMCCkYICRgCKkBSRJ05ISelFe89y3BayrNZpdt4ojof7B4SWU8ziKDMnvsm1oHmIDoeRE92CNCSmt7yrbtKqqq8BJHWJ7pzh0RhEgz50Nq6xuweMPK6DTEaDAQVaWY/vPqCPiXoVyIwS2iRpWsQ7Tl6jE0ivy2N74kKo+GS8zLqXzpYbDTU0V5I+Kq8PhwV02n8qGISmsa9KsoBvLZBx4WTbBqx1zJLDX51X6LGsXWn9c2d6HNnTS6npmwbHZAYW+tlPT5ba30JQFfuK0ZbHRrteUJIW66JWQn6MxOAwr8nbR/JVIfmf5xzFy1HK8Njw1zv7i42yN/0tKgJBHy91Ie/A44Ae1Q7ZdWrztCR4aMbdX82c1CU6olNmu1B5G1cwokqIOIy7exsAIupCkOPL1nnIIi+gIkAPDfwn3sIVp9+guSflx0p0v1U7euhnliSDAOaDNsb8oOnOTA/0cF0aSVI3w4xKRgB","thinking":"The
+      user wants me to:\n1. Use the calculator to compute 7 times 8\n2. Explain what
+      I did\n\nI need to use the calculator function with:\n- operation: \"multiply\"\n-
+      a: 7\n- b: 8\n\nLet me do that.","type":"thinking"},{"type":"tool_use","id":"toolu_019JUKMNTxCUFjoACZYq15j1","name":"calculator","input":{"operation":"multiply","a":7,"b":8}}]},{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_019JUKMNTxCUFjoACZYq15j1","content":"{\"result\":
+      56}"}]}],"model":"claude-sonnet-4-5-20250929","stream":false,"system":"","thinking":{"type":"enabled","budget_tokens":2048},"tools":[{"name":"calculator","description":"Perform
+      basic arithmetic operations","input_schema":{"type":"object","properties":{"operation":{"type":"string","enum":["add","multiply"],"description":"The
+      arithmetic operation to perform"},"a":{"type":"number","description":"First
+      number"},"b":{"type":"number","description":"Second number"}},"required":["operation","a","b"]}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      anthropic-version:
+      - '2023-06-01'
+      connection:
+      - keep-alive
+      content-length:
+      - '1656'
+      content-type:
+      - application/json
+      host:
+      - api.anthropic.com
+      user-agent:
+      - Anthropic/Python 0.72.0
+      x-api-key:
+      - REDACTED
+      x-stainless-arch:
+      - x64
+      x-stainless-async:
+      - 'false'
+      x-stainless-lang:
+      - python
+      x-stainless-os:
+      - Linux
+      x-stainless-package-version:
+      - 0.72.0
+      x-stainless-read-timeout:
+      - '600'
+      x-stainless-retry-count:
+      - '0'
+      x-stainless-runtime:
+      - CPython
+      x-stainless-runtime-version:
+      - 3.11.14
+      x-stainless-timeout:
+      - '600'
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA3SST4vbMBDFv8owp9Y4If+8m/i49BJ6KiwUti5GkSZrNfbI1Yy2DSHfvdhNaLbb
+        ngTze0/vMdIJu+CoxRJta5KjiQRm0slqUkwWs0Ux2yw2mKN3WGInz/VsPt99cIdvK3l8mj8cn+Tw
+        cJCPxSfMUY89DSoSMc+EOcbQDgMj4kUNK+ZoAyuxYvnldNUr/RzIeJS4hSTkQBsCa1qbWqMhwj6x
+        VR8YNIANXZ+U4B7UdySwzsHwb0ckSa2CF8iy4i7LphVXnGWfG6OwBeddmWUVz6ewBc8v4fA2SENo
+        4YfXZgQVdqlV37fHCiH0FM1QouLFcIOQjqK9j6LAqdtRhHe9iaYjpQgVmgrfD43vK17eOoRsYPdP
+        y+5iWVe8msLj63I9xX2I3aX1pZq3Y6lxB5E0RSYHxR0YuVkJnr/mKBr6OpKRwFgisasHNV6A0PdE
+        bAlLTm2bYxofsTyh5z5preFALFiul5scrbEN1TbSGF2/VsyuPJJx/2NX7xBAfUMdRdPWRfdW/4fO
+        m7/pOceQ9Ha0WeYoFF+8pVo9RSxx+HrORIfn8y8AAAD//wMASytYVe0CAAA=
+    headers:
+      CF-RAY:
+      - 99a9d91cec76116f-ORD
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Fri, 07 Nov 2025 03:47:18 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-organization-id:
+      - 53c266df-54c5-4563-922c-15786e95534d
+      anthropic-ratelimit-input-tokens-limit:
+      - '450000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '450000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2025-11-07T03:47:16Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '90000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '90000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2025-11-07T03:47:18Z'
+      anthropic-ratelimit-requests-limit:
+      - '1000'
+      anthropic-ratelimit-requests-remaining:
+      - '999'
+      anthropic-ratelimit-requests-reset:
+      - '2025-11-07T03:47:14Z'
+      anthropic-ratelimit-tokens-limit:
+      - '540000'
+      anthropic-ratelimit-tokens-remaining:
+      - '540000'
+      anthropic-ratelimit-tokens-reset:
+      - '2025-11-07T03:47:16Z'
+      cf-cache-status:
+      - DYNAMIC
+      request-id:
+      - req_011CUsqtpC3hVxsQUpnfLQvp
+      retry-after:
+      - '44'
+      strict-transport-security:
+      - max-age=31536000; includeSubDomains; preload
+      x-envoy-upstream-service-time:
+      - '3917'
+    status:
+      code: 200
+      message: OK
+version: 1
