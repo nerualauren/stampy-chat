@@ -1,0 +1,12 @@
+version: 1
+interactions:
+# This is a MOCK cassette for demonstration purposes
+# To create a real cassette with actual API responses, run:
+# pipenv run pytest tests/stampy_chat/test_chat_integration_vcr.py --record-mode=rewrite
+#
+# The real cassette should contain:
+# 1. Voyage AI embedding request
+# 2. Pinecone vector search request
+# 3. Anthropic chat completion request (streaming)
+#
+# All API keys should be REDACTED by the vcr_config in conftest.py
